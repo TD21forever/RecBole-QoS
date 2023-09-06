@@ -10,9 +10,7 @@ import torch.nn as nn
 from torch.nn.init import normal_
 
 from models.abc_model import GeneralRecommender
-from recbole.model.layers import MLPLayers
-from recbole.utils import InputType
-
+from models.layers import MLPLayers
 
 class NeuMF(GeneralRecommender):
     r"""NeuMF is an neural network enhanced matrix factorization model.
@@ -23,7 +21,6 @@ class NeuMF(GeneralRecommender):
         Our implementation only contains a rough pretraining function.
 
     """
-    input_type = InputType.POINTWISE
 
     def __init__(self, config, dataset):
         super(NeuMF, self).__init__(config, dataset)
@@ -140,7 +137,7 @@ class NeuMF(GeneralRecommender):
     def predict(self, interaction):
         user = interaction[self.USER_ID]
         item = interaction[self.ITEM_ID]
-        predict = torch.mul
+        predict = torch.mul(user, item)
         return predict
 
     def dump_parameters(self):

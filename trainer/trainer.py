@@ -1,10 +1,14 @@
 
 import os
 import time
+from logging import getLogger
 
 import numpy as np
 import torch
 from data.interaction import Interaction
+from evaluator.collector import Collector
+from evaluator.evaluator import Evaluator
+from models.abc_model import AbstractRecommender
 from recbole.utils import (dict2str, early_stopping, ensure_dir, get_gpu_usage,
                            get_local_time, set_color)
 from torch import optim
@@ -19,7 +23,7 @@ class AbstractTrainer(object):
     to different training and evaluation strategies.
     """
 
-    def __init__(self, config, model):
+    def __init__(self, config, model: AbstractRecommender):
         self.config = config
         self.model = model
 
@@ -48,7 +52,7 @@ class Trainer(AbstractTrainer):
 
     """
 
-    def __init__(self, config, model):
+    def __init__(self, config, model: AbstractRecommender):
         super(Trainer, self).__init__(config, model)
 
         self.learner = config["learner"]
@@ -56,6 +60,7 @@ class Trainer(AbstractTrainer):
         self.epochs = config["epochs"]
         self.eval_step: int = min(config["eval_step"], self.epochs)
         self.stopping_step = config["stopping_step"]
+        self.valid_metric = config["valid_metric"].lower()
         self.valid_metric_bigger = config["valid_metric_bigger"]  # 是不是越大越好
         self.test_batch_size = config["eval_batch_size"]
         self.gpu_available = torch.cuda.is_available() and config["use_gpu"]
@@ -79,8 +84,12 @@ class Trainer(AbstractTrainer):
         self.train_loss_dict = dict()
         self.optimizer = self._build_optimizer()
         self.eval_type = config["eval_type"]
+        self.eval_collector = Collector(config)
+        self.evaluator = Evaluator(config)
         self.item_tensor = None
         self.tot_item_num = None
+
+        self.logger = getLogger()
 
     def _build_optimizer(self, **kwargs):
         r"""Init the Optimizer
@@ -105,11 +114,10 @@ class Trainer(AbstractTrainer):
             and weight_decay
             and weight_decay * self.config["reg_weight"] > 0
         ):
-            ...
-            # self.logger.warning(
-            #     "The parameters [weight_decay] and [reg_weight] are specified simultaneously, "
-            #     "which may lead to double regularization."
-            # )
+            self.logger.warning(
+                "The parameters [weight_decay] and [reg_weight] are specified simultaneously, "
+                "which may lead to double regularization."
+            )
 
         if learner.lower() == "adam":
             optimizer = optim.Adam(
@@ -128,14 +136,14 @@ class Trainer(AbstractTrainer):
         elif learner.lower() == "sparse_adam":
             optimizer = optim.SparseAdam(params, lr=learning_rate)
             if weight_decay > 0:
-                ...
-                # self.logger.warning(
-                #     "Sparse Adam cannot argument received argument [{weight_decay}]"
-                # )
+
+                self.logger.warning(
+                    "Sparse Adam cannot argument received argument [{weight_decay}]"
+                )
         else:
-            # self.logger.warning(
-            #     "Received unrecognized optimizer, set default Adam optimizer"
-            # )
+            self.logger.warning(
+                "Received unrecognized optimizer, set default Adam optimizer"
+            )
             optimizer = optim.Adam(params, lr=learning_rate)
         return optimizer
 
@@ -157,12 +165,14 @@ class Trainer(AbstractTrainer):
         self.model.train()
         loss_func = loss_func or self.model.calculate_loss
         total_loss = None
+
+        # 下面这个方法值得学习
         iter_data = (
             tqdm(
                 train_data,
                 total=len(train_data),
                 ncols=100,
-                desc=set_color(f"Train {epoch_idx:>5}", "pink"),
+                desc=set_color(f"Train {epoch_idx:>5}", "green"),
             )
             if show_progress
             else train_data
@@ -176,13 +186,15 @@ class Trainer(AbstractTrainer):
             with autocast(device_type=self.device.type, enabled=self.enable_amp):
                 losses = loss_func(interaction)
 
+            # 不理解为什么会有tuple类型的loss,先留着
             if isinstance(losses, tuple):
+                self.logger.debug("LOSS类型是tuple")
                 loss = sum(losses)
                 loss_tuple = tuple(per_loss.item() for per_loss in losses)
                 total_loss = (
                     loss_tuple
                     if total_loss is None
-                    else tuple(map(sum, zip(total_loss, loss_tuple)))
+                    else tuple(map(sum, zip(total_loss, loss_tuple))) # type: ignore
                 )
             else:
                 loss = losses
@@ -190,13 +202,14 @@ class Trainer(AbstractTrainer):
                     losses.item() if total_loss is None else total_loss + losses.item()
                 )
             self._check_nan(loss)
-            scaler.scale(loss).backward()
+            scaler.scale(loss).backward() # type: ignore
             scaler.step(self.optimizer)
             scaler.update()
-            # if self.gpu_available and show_progress:
-            #     iter_data.set_postfix_str(
-            #         set_color("GPU RAM: " + get_gpu_usage(self.device), "yellow")
-            #     )
+            if self.gpu_available and show_progress:
+                iter_data.set_postfix_str(
+                    set_color("GPU RAM: " +
+                              get_gpu_usage(self.device), "yellow")
+                )
         return total_loss
 
     def _save_checkpoint(self, epoch, verbose=True, **kwargs):
@@ -221,10 +234,58 @@ class Trainer(AbstractTrainer):
         }
         torch.save(state, saved_model_file, pickle_protocol=4)
         if verbose:
-            ...
-            # self.logger.info(
-            #     set_color("Saving current", "blue") + f": {saved_model_file}"
-            # )
+            self.logger.info(
+                set_color("Saving current", "white") + f": {saved_model_file}"
+            )
+
+    def _valid_epoch(self, valid_data, show_progress=False):
+        r"""Valid the model with valid data
+
+        Args:
+            valid_data (DataLoader): the valid data.
+            show_progress (bool): Show the progress of evaluate epoch. Defaults to ``False``.
+
+        Returns:
+            float: valid score
+            dict: valid result
+        """
+        valid_result = self.evaluate(
+            valid_data, show_progress=show_progress
+        )
+        valid_score = valid_result[self.valid_metric]
+        return valid_score, valid_result
+
+    @torch.no_grad()
+    def evaluate(self, eval_data, show_progress=False):
+        self.model.eval()
+        iter_data = (
+            tqdm(
+                eval_data,
+                total=len(eval_data),
+                ncols=100,
+                desc=set_color(f"Evaluate   ", "pink"),
+            )
+            if show_progress
+            else eval_data
+        )
+        num_sample = 0
+        for batch_idx, batched_data in enumerate(iter_data):
+            num_sample += len(batched_data)
+            interaction, origin_scores, positive_u, positive_i = self.eval_func(
+                batched_data)
+            self.eval_collector.eval_batch_collect(origin_scores, interaction)
+        struct = self.eval_collector.get_data_struct()
+        result = self.evaluator.evaluate(struct)
+        return result
+
+    def eval_func(self, batched_data):
+        interaction, positive_u, positive_i = batched_data
+        batch_size = interaction.length
+        if batch_size <= self.test_batch_size:
+            origin_scores = self.model.predict(interaction.to(self.device))
+        else:
+            origin_scores = self._spilt_predict(interaction, batch_size)
+        return interaction, origin_scores, positive_u, positive_i
 
     def resume_checkpoint(self, resume_file):
         r"""Load the model parameters information and training information.
@@ -362,8 +423,8 @@ class Trainer(AbstractTrainer):
                 epoch_idx, training_start_time, training_end_time, train_loss
             )
             if verbose:
-                # self.logger.info(train_loss_output)
-                ...
+                self.logger.info(train_loss_output)
+
             # TODO
             # self._add_train_loss_to_tensorboard(epoch_idx, train_loss)
             # self.wandblogger.log_metrics(
@@ -376,64 +437,64 @@ class Trainer(AbstractTrainer):
                 if saved:
                     self._save_checkpoint(epoch_idx, verbose=verbose)
                 continue
-            # TODO
-            # if (epoch_idx + 1) % self.eval_step == 0:
-            #     valid_start_time = time.time()
-            #     valid_score, valid_result = self._valid_epoch(
-            #         valid_data, show_progress=show_progress
-            #     )
 
-            #     (
-            #         self.best_valid_score,
-            #         self.cur_step,
-            #         stop_flag,
-            #         update_flag,
-            #     ) = early_stopping(
-            #         valid_score,
-            #         self.best_valid_score,
-            #         self.cur_step,
-            #         max_step=self.stopping_step,
-            #         bigger=self.valid_metric_bigger,
-            #     )
-            #     valid_end_time = time.time()
-            #     valid_score_output = (
-            #         set_color("epoch %d evaluating", "green")
-            #         + " ["
-            #         + set_color("time", "blue")
-            #         + ": %.2fs, "
-            #         + set_color("valid_score", "blue")
-            #         + ": %f]"
-            #     ) % (epoch_idx, valid_end_time - valid_start_time, valid_score)
-            #     valid_result_output = (
-            #         set_color("valid result", "blue") + ": \n" + dict2str(valid_result)
-            #     )
-            #     if verbose:
-            #         # self.logger.info(valid_score_output)
-            #         # self.logger.info(valid_result_output)
+            if (epoch_idx + 1) % self.eval_step == 0:
+                valid_start_time = time.time()
+                valid_score, valid_result = self._valid_epoch(
+                    valid_data, show_progress=show_progress
+                )
+
+                (
+                    self.best_valid_score,
+                    self.cur_step,
+                    stop_flag,
+                    update_flag,
+                ) = early_stopping(
+                    valid_score,
+                    self.best_valid_score,
+                    self.cur_step,
+                    max_step=self.stopping_step,
+                    bigger=self.valid_metric_bigger,
+                )
+                valid_end_time = time.time()
+                valid_score_output = (
+                    set_color("epoch %d evaluating", "green")
+                    + " ["
+                    + set_color("time", "blue")
+                    + ": %.2fs, "
+                    + set_color("valid_score", "blue")
+                    + ": %f]"
+                ) % (epoch_idx, valid_end_time - valid_start_time, valid_score)
+                valid_result_output = (
+                    set_color("valid result", "blue") +
+                    ": \n" + dict2str(valid_result)
+                )
+                if verbose:
+                    self.logger.info(valid_score_output)
+                    self.logger.info(valid_result_output)
             #         ...
             #     # self.tensorboard.add_scalar("Vaild_score", valid_score, epoch_idx)
             #     # self.wandblogger.log_metrics(
             #     #     {**valid_result, "valid_step": valid_step}, head="valid"
             #     # )
 
-            #     if update_flag:
-            #         if saved:
-            #             self._save_checkpoint(epoch_idx, verbose=verbose)
-            #         self.best_valid_result = valid_result
+                if update_flag:
+                    #         if saved:
+                    #             self._save_checkpoint(epoch_idx, verbose=verbose)
+                    self.best_valid_result = valid_result
 
-            #     if callback_fn:
-            #         callback_fn(epoch_idx, valid_score)
+                if callback_fn:
+                    callback_fn(epoch_idx, valid_score)
 
-            #     if stop_flag:
-            #         stop_output = "Finished training, best eval result in epoch %d" % (
-            #             epoch_idx - self.cur_step * self.eval_step
-            #         )
-            #         if verbose:
-            #             # self.logger.info(stop_output)
-            #             ...
-            #         break
+                if stop_flag:
+                    stop_output = "Finished training, best eval result in epoch %d" % (
+                        epoch_idx - self.cur_step * self.eval_step
+                    )
+                    if verbose:
+                        self.logger.info(stop_output)
+                    break
 
-            #     valid_step += 1
+                valid_step += 1
 
         # self._add_hparam_to_tensorboard(self.best_valid_score)
         return self.best_valid_score, self.best_valid_result

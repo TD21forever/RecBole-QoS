@@ -32,7 +32,6 @@ class RecboleDataset(TorchDataset):
 
     def _get_preset(self):
         self.field2type: Dict[str, FeatType] = {}
-        self.field2num: Dict[str, int] = {}
 
     def _data_processing(self):
         self.feat_name_list = self._build_feat_name_list()
@@ -156,7 +155,7 @@ class RecboleDataset(TorchDataset):
         split_ids = np.cumsum(cnt)[:-1]
         return list(split_ids)
 
-    def _dataframe_to_interaction(self, data: pd.DataFrame):
+    def _dataframe_to_interaction(self, data: pd.DataFrame) -> Interaction:
         data_for_tensor = {}
         for col_name in data:
             assert isinstance(col_name, str)
@@ -173,11 +172,12 @@ class RecboleDataset(TorchDataset):
     def __len__(self):
         return len(self.inter_feat)
 
-    def __getitem__(self, index, join=True):
+    def __getitem__(self, index, join=False) -> Interaction:
+        assert isinstance(self.inter_feat, Interaction)
         df = self.inter_feat[index]
         return self.join(df) if join else df
 
-    def join(self, df):
+    def join(self, df) -> Interaction:
         """Given interaction feature, join user/item feature into it.
 
         Args:

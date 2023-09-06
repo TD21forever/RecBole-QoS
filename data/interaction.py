@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.utils.rnn as rnn_utils
+from typing import Dict
 
 
 def _convert_to_tensor(data):
@@ -28,7 +29,7 @@ def _convert_to_tensor(data):
         torch.Tensor: Converted tensor from `data`.
     """
     elem = data[0]
-    if isinstance(elem, (float, int, np.float64, np.int64)):
+    if isinstance(elem, (float, int, np.floating, np.integer)):
         new_data = torch.as_tensor(data)
     elif isinstance(elem, (list, tuple, pd.Series, np.ndarray, torch.Tensor)):
         seq_data = [torch.as_tensor(d) for d in data]
@@ -97,7 +98,7 @@ class Interaction(object):
     """
 
     def __init__(self, interaction):
-        self.interaction = dict()
+        self.interaction:Dict[str, torch.Tensor] = dict()
         if isinstance(interaction, dict):
             for key, value in interaction.items():
                 if isinstance(value, (list, np.ndarray)):
@@ -110,6 +111,7 @@ class Interaction(object):
                     )
         elif isinstance(interaction, pd.DataFrame):
             for key in interaction:
+                assert isinstance(key, str)
                 value = interaction[key].values
                 self.interaction[key] = _convert_to_tensor(value)
         else:
