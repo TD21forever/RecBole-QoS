@@ -83,10 +83,10 @@ def activation_layer(activation_name="relu", emb_dim=None):
         activation: activation layer
     """
     activation = None
-    
+
     if activation_name is None:
         return activation
-    
+
     if isinstance(activation_name, str):
         if activation_name.lower() == "sigmoid":
             activation = nn.Sigmoid()
@@ -233,7 +233,8 @@ class AttLayer(nn.Module):
         super(AttLayer, self).__init__()
         self.in_dim = in_dim
         self.att_dim = att_dim
-        self.w = torch.nn.Linear(in_features=in_dim, out_features=att_dim, bias=False)
+        self.w = torch.nn.Linear(
+            in_features=in_dim, out_features=att_dim, bias=False)
         self.h = nn.Parameter(torch.randn(att_dim), requires_grad=True)
 
     def forward(self, infeatures):
@@ -356,7 +357,8 @@ class VanillaAttention(nn.Module):
     def __init__(self, hidden_dim, attn_dim):
         super().__init__()
         self.projection = nn.Sequential(
-            nn.Linear(hidden_dim, attn_dim), nn.ReLU(True), nn.Linear(attn_dim, 1)
+            nn.Linear(hidden_dim, attn_dim), nn.ReLU(
+                True), nn.Linear(attn_dim, 1)
         )
 
     def forward(self, input_tensor):
@@ -425,9 +427,12 @@ class MultiHeadAttention(nn.Module):
         mixed_key_layer = self.key(input_tensor)
         mixed_value_layer = self.value(input_tensor)
 
-        query_layer = self.transpose_for_scores(mixed_query_layer).permute(0, 2, 1, 3)
-        key_layer = self.transpose_for_scores(mixed_key_layer).permute(0, 2, 3, 1)
-        value_layer = self.transpose_for_scores(mixed_value_layer).permute(0, 2, 1, 3)
+        query_layer = self.transpose_for_scores(
+            mixed_query_layer).permute(0, 2, 1, 3)
+        key_layer = self.transpose_for_scores(
+            mixed_key_layer).permute(0, 2, 3, 1)
+        value_layer = self.transpose_for_scores(
+            mixed_value_layer).permute(0, 2, 1, 3)
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
         attention_scores = torch.matmul(query_layer, key_layer)
@@ -446,7 +451,8 @@ class MultiHeadAttention(nn.Module):
         attention_probs = self.attn_dropout(attention_probs)
         context_layer = torch.matmul(attention_probs, value_layer)
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
-        new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
+        new_context_layer_shape = context_layer.size()[
+            :-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
         hidden_states = self.dense(context_layer)
         hidden_states = self.out_dropout(hidden_states)
@@ -550,7 +556,8 @@ class TransformerLayer(nn.Module):
         )
 
     def forward(self, hidden_states, attention_mask):
-        attention_output = self.multi_head_attention(hidden_states, attention_mask)
+        attention_output = self.multi_head_attention(
+            hidden_states, attention_mask)
         feedforward_output = self.feed_forward(attention_output)
         return feedforward_output
 
@@ -593,7 +600,8 @@ class TransformerEncoder(nn.Module):
             hidden_act,
             layer_norm_eps,
         )
-        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(n_layers)])
+        self.layer = nn.ModuleList([copy.deepcopy(layer)
+                                   for _ in range(n_layers)])
 
     def forward(self, hidden_states, attention_mask, output_all_encoded_layers=True):
         """
@@ -626,7 +634,8 @@ class ItemToInterestAggregation(nn.Module):
     def forward(self, input_tensor):  # [B, L, d] -> [B, k, d]
         D_matrix = torch.matmul(input_tensor, self.theta)  # [B, L, k]
         D_matrix = nn.Softmax(dim=-2)(D_matrix)
-        result = torch.einsum("nij, nik -> nkj", input_tensor, D_matrix)  # #[B, k, d]
+        result = torch.einsum(
+            "nij, nik -> nkj", input_tensor, D_matrix)  # #[B, k, d]
 
         return result
 
@@ -696,13 +705,16 @@ class LightMultiHeadAttention(nn.Module):
 
         # low-rank decomposed self-attention: relation of items
         query_layer = self.transpose_for_scores(mixed_query_layer)
-        key_layer = self.transpose_for_scores(self.attpooling_key(mixed_key_layer))
+        key_layer = self.transpose_for_scores(
+            self.attpooling_key(mixed_key_layer))
         value_layer = self.transpose_for_scores(
             self.attpooling_value(mixed_value_layer)
         )
 
-        attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
-        attention_scores = attention_scores / math.sqrt(self.attention_head_size)
+        attention_scores = torch.matmul(
+            query_layer, key_layer.transpose(-1, -2))
+        attention_scores = attention_scores / \
+            math.sqrt(self.attention_head_size)
 
         # normalize the attention scores to probabilities.
         attention_probs = nn.Softmax(dim=-2)(attention_scores)
@@ -713,11 +725,13 @@ class LightMultiHeadAttention(nn.Module):
         value_layer_pos = self.transpose_for_scores(mixed_value_layer)
         pos_emb = self.pos_ln(pos_emb).unsqueeze(0)
         pos_query_layer = (
-            self.transpose_for_scores(self.pos_q_linear(pos_emb)) * self.pos_scaling
+            self.transpose_for_scores(
+                self.pos_q_linear(pos_emb)) * self.pos_scaling
         )
         pos_key_layer = self.transpose_for_scores(self.pos_k_linear(pos_emb))
 
-        abs_pos_bias = torch.matmul(pos_query_layer, pos_key_layer.transpose(-1, -2))
+        abs_pos_bias = torch.matmul(
+            pos_query_layer, pos_key_layer.transpose(-1, -2))
         abs_pos_bias = abs_pos_bias / math.sqrt(self.attention_head_size)
         abs_pos_bias = nn.Softmax(dim=-2)(abs_pos_bias)
 
@@ -726,7 +740,8 @@ class LightMultiHeadAttention(nn.Module):
         context_layer = context_layer_item + context_layer_pos
 
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
-        new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
+        new_context_layer_shape = context_layer.size()[
+            :-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
         hidden_states = self.dense(context_layer)
         hidden_states = self.out_dropout(hidden_states)
@@ -824,7 +839,8 @@ class LightTransformerEncoder(nn.Module):
             hidden_act,
             layer_norm_eps,
         )
-        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(n_layers)])
+        self.layer = nn.ModuleList([copy.deepcopy(layer)
+                                   for _ in range(n_layers)])
 
     def forward(self, hidden_states, pos_emb, output_all_encoded_layers=True):
         """
@@ -845,7 +861,6 @@ class LightTransformerEncoder(nn.Module):
         if not output_all_encoded_layers:
             all_encoder_layers.append(hidden_states)
         return all_encoder_layers
-
 
 
 class CNNLayers(nn.Module):
@@ -928,5 +943,3 @@ class CNNLayers(nn.Module):
 
     def forward(self, input_feature):
         return self.cnn_layers(input_feature)
-
-

@@ -89,3 +89,4 @@ ENV/
 *.item
 *.user
 *.inter
+*.DS_Store
