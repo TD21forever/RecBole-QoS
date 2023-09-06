@@ -16,11 +16,11 @@ shuffle: True                   # (bool) Whether or not to shuffle the training 
 
 # Training Settings
 epochs: 300                     # (int) The number of training epochs.
-train_batch_size: 2048          # (int) The training batch size.
+train_batch_size: 128          # (int) The training batch size.
 learner: adam                   # (str) The name of used optimizer.
 learning_rate: 0.001            # (float) Learning rate.
 weight_decay: 0.0               # (float) The weight decay value (L2 penalty) for optimizers.
-eval_step: 1                    # (int) The number of training epochs before an evaluation on the valid dataset.
+eval_step: 20                    # (int) The number of training epochs before an evaluation on the valid dataset.
 stopping_step: 10               # (int) The threshold for validation-based early stopping.
 clip_grad_norm: ~               # (dict) The args of clip_grad_norm_ which will clip gradient norm of model. 
 loss_decimal_place: 4           # (int) The decimal place of training loss.
@@ -34,3 +34,4 @@ metrics: ["rmse", "mae"]        # (list or str) Evaluation metrics.
 valid_metric_bigger: True       # (bool) Whether to take a bigger valid metric value as a better result.
 eval_batch_size: 4096           # (int) The evaluation batch size.
 valid_metric: "mae"
+metric_decimal_place: 4

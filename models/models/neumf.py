@@ -137,8 +137,7 @@ class NeuMF(GeneralRecommender):
     def predict(self, interaction):
         user = interaction[self.USER_ID]
         item = interaction[self.ITEM_ID]
-        predict = torch.mul(user, item)
-        return predict
+        return self.forward(user, item)
 
     def dump_parameters(self):
         r"""A simple implementation of dumping model parameters for pretrain."""

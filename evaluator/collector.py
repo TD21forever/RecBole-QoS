@@ -94,7 +94,6 @@ class Collector(object):
             positive_u(Torch.Tensor): the row index of positive items for each user.
             positive_i(Torch.Tensor): the positive item id for each user.
         """
-
         if self.register.need("rec.score"):
 
             self.data_struct.update_tensor("rec.score", scores_tensor)
