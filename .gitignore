@@ -1,0 +1,91 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+# 通常用于将 Python 代码打包为可执行文件
+# https://www.pyinstaller.org/
+dist/
+build/
+*.spec
+
+# pytest
+# https://docs.pytest.org/
+pytest_cache/
+
+# mypy
+# https://mypy.readthedocs.io/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+# https://pyre-check.org/
+.pyre/
+
+# Django
+*.log
+local_settings.py
+
+# Flask
+instance/
+
+# Sphinx documentation
+docs/_build/
+
+# IPython/Jupyter Notebook
+.ipynb_checkpoints
+.ipynb_checkpoints/*
+
+# pyenv
+# https://github.com/pyenv/pyenv
+.python-version
+
+# pipenv
+# https://github.com/pypa/pipenv
+Pipfile.lock
+
+# Poetry
+# https://python-poetry.org/
+poetry.lock
+
+# virtualenv
+# https://docs.python.org/3/library/venv.html
+.venv/
+venv/
+ENV/
+
+# IDE/Editor specific
+.idea/
+.vscode/
+*.swp
+*~
+
+*.item
+*.user
+*.inter
