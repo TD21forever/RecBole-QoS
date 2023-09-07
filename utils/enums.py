@@ -24,9 +24,21 @@ class WSDreamDataType(Enum):
     TP_AND_RT = (3, "wsdream-all")
 
     @classmethod
-    def from_code(cls, code:int):
+    def from_code(cls, code: int):
         for wsdream_type in WSDreamDataType:
             if wsdream_type.value[0] == code:
                 return wsdream_type
         return None
-    
+
+
+class FeatSource(Enum):
+    """Source of features.
+
+    - ``INTERACTION``: Features from ``.inter``
+    - ``USER``: Features from ``.user`` 
+    - ``ITEM``: Features from ``.item`` 
+    """
+
+    INTERACTION = "inter"
+    USER = "user"
+    ITEM = "item"

@@ -7,10 +7,10 @@ Reference:
 
 import torch
 import torch.nn as nn
-from torch.nn.init import normal_
-
 from models.abc_model import GeneralRecommender
 from models.layers import MLPLayers
+from torch.nn.init import normal_
+
 
 class NeuMF(GeneralRecommender):
     r"""NeuMF is an neural network enhanced matrix factorization model.
@@ -40,12 +40,17 @@ class NeuMF(GeneralRecommender):
         self.mlp_pretrain_path = config["mlp_pretrain_path"]
 
         # define layers and loss
-        self.user_mf_embedding = nn.Embedding(self.n_users, self.mf_embedding_size)
-        self.item_mf_embedding = nn.Embedding(self.n_items, self.mf_embedding_size)
-        self.user_mlp_embedding = nn.Embedding(self.n_users, self.mlp_embedding_size)
-        self.item_mlp_embedding = nn.Embedding(self.n_items, self.mlp_embedding_size)
+        self.user_mf_embedding = nn.Embedding(
+            self.n_users, self.mf_embedding_size)
+        self.item_mf_embedding = nn.Embedding(
+            self.n_items, self.mf_embedding_size)
+        self.user_mlp_embedding = nn.Embedding(
+            self.n_users, self.mlp_embedding_size)
+        self.item_mlp_embedding = nn.Embedding(
+            self.n_items, self.mlp_embedding_size)
         self.mlp_layers = MLPLayers(
-            [2 * self.mlp_embedding_size] + self.mlp_hidden_size, self.dropout_prob
+            [2 * self.mlp_embedding_size] +
+            self.mlp_hidden_size, self.dropout_prob
         )
         if self.mf_train and self.mlp_train:
             self.predict_layer = nn.Linear(
@@ -55,14 +60,15 @@ class NeuMF(GeneralRecommender):
             self.predict_layer = nn.Linear(self.mf_embedding_size, 1)
         elif self.mlp_train:
             self.predict_layer = nn.Linear(self.mlp_hidden_size[-1], 1)
-            
+
         self.loss = nn.L1Loss()
-        
+
         # parameters initialization
         if self.use_pretrain:
             self.load_pretrain()
         else:
-            self.apply(self._init_weights)
+            # self.apply(self._init_weights)
+            ...
 
     def load_pretrain(self):
         r"""A simple implementation of loading pretrained parameters."""
@@ -70,10 +76,14 @@ class NeuMF(GeneralRecommender):
         mlp = torch.load(self.mlp_pretrain_path, map_location="cpu")
         mf = mf if "state_dict" not in mf else mf["state_dict"]
         mlp = mlp if "state_dict" not in mlp else mlp["state_dict"]
-        self.user_mf_embedding.weight.data.copy_(mf["user_mf_embedding.weight"])
-        self.item_mf_embedding.weight.data.copy_(mf["item_mf_embedding.weight"])
-        self.user_mlp_embedding.weight.data.copy_(mlp["user_mlp_embedding.weight"])
-        self.item_mlp_embedding.weight.data.copy_(mlp["item_mlp_embedding.weight"])
+        self.user_mf_embedding.weight.data.copy_(
+            mf["user_mf_embedding.weight"])
+        self.item_mf_embedding.weight.data.copy_(
+            mf["item_mf_embedding.weight"])
+        self.user_mlp_embedding.weight.data.copy_(
+            mlp["user_mlp_embedding.weight"])
+        self.item_mlp_embedding.weight.data.copy_(
+            mlp["item_mlp_embedding.weight"])
 
         mlp_layers = list(self.mlp_layers.state_dict().keys())
         index = 0
@@ -110,7 +120,8 @@ class NeuMF(GeneralRecommender):
         item_mlp_e = self.item_mlp_embedding(item)
         mf_output, mlp_output = None, None
         if self.mf_train:
-            mf_output = torch.mul(user_mf_e, item_mf_e)  # [batch_size, embedding_size]
+            # [batch_size, embedding_size]
+            mf_output = torch.mul(user_mf_e, item_mf_e)
         if self.mlp_train:
             mlp_output = self.mlp_layers(
                 torch.cat((user_mlp_e, item_mlp_e), -1)

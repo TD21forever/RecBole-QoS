@@ -8,7 +8,7 @@ import torch
 from data.interaction import Interaction
 from root import DATASET_DIR
 from torch.utils.data import Dataset as TorchDataset
-from utils.enums import FeatType
+from utils.enums import FeatSource, FeatType
 
 
 class RecboleDataset(TorchDataset):
@@ -32,9 +32,12 @@ class RecboleDataset(TorchDataset):
 
     def _get_preset(self):
         self.field2type: Dict[str, FeatType] = {}
+        self.field2num: Dict[str, Dict[FeatSource, int]] = {}
 
     def _data_processing(self):
         self.feat_name_list = self._build_feat_name_list()
+        self._data_filtering()
+        self._reset_index()
 
     def _load_data(self, data_dir):
         """加载数据集"""
@@ -43,7 +46,28 @@ class RecboleDataset(TorchDataset):
         self._load_user_feat(dataset_dir, self.dataset_name)
         self._load_inter_feat(dataset_dir, self.dataset_name)
 
-    def _load_feat(self, feat_dir, feat_name):
+    def _data_filtering(self):
+        nan_flag = self.config["nan_flag"]
+        if nan_flag is None:
+            return
+        print("处理之前的数据量：", len(self.inter_feat))
+        self.inter_feat = self.inter_feat[self.inter_feat[self.label_field] != -1]
+        print("处理之后的数据量：", len(self.inter_feat))
+
+    def _reset_index(self):
+        for feat_name in self.feat_name_list:
+            feat = getattr(self, feat_name)
+            assert isinstance(feat, pd.DataFrame)
+            if feat.empty:
+                raise ValueError(
+                    "feat {} is empty, please check your data".format(
+                        feat_name)
+                )
+            print(feat.index)
+            feat.reset_index(drop=True, inplace=True)
+            print(feat.index)
+
+    def _load_feat(self, feat_dir, feat_name, source: FeatSource):
         path = os.path.join(feat_dir, feat_name)
         if not os.path.exists(path):
             raise FileNotFoundError(f"{path} not found")
@@ -59,32 +83,37 @@ class RecboleDataset(TorchDataset):
                 raise ValueError(f"feat type {dtype} not found")
             new_columns.append(name)
             self.field2type[name] = dtype
+            if name not in self.field2num:
+                self.field2num[name] = {source: self._count_unique(df, col)}
+            else:
+                self.field2num[name][source] = self._count_unique(df, col)
+
         df.columns = new_columns
 
         return df
 
-    @property
-    def uid_num(self):
-        return self._count_unique(self.uid_field)
+    def num(self, field, source):
+        if field in self.field2num:
+            return self.field2num[field].get(source, 0)
+        raise ValueError("")
 
-    @property
-    def iid_num(self):
-        return self._count_unique(self.iid_field)
-
-    def _count_unique(self, feat_name):
-        return len(self.inter_feat[feat_name].unique())
+    def _count_unique(self, df: pd.DataFrame, field_name: str):
+        if field_name not in df:
+            return 0
+        return len(df[field_name].unique())
 
     def _load_inter_feat(self, feat_dir, feat_prefix):
         feat_name = f"{feat_prefix}.inter"
-        self.inter_feat = self._load_feat(feat_dir, feat_name)
+        self.inter_feat = self._load_feat(
+            feat_dir, feat_name, FeatSource.INTERACTION)
 
     def _load_user_feat(self, feat_dir, feat_prefix):
         feat_name = f"{feat_prefix}.user"
-        self.user_feat = self._load_feat(feat_dir, feat_name)
+        self.user_feat = self._load_feat(feat_dir, feat_name, FeatSource.USER)
 
     def _load_item_feat(self, feat_dir, feat_prefix):
         feat_name = f"{feat_prefix}.item"
-        self.item_feat = self._load_feat(feat_dir, feat_name)
+        self.item_feat = self._load_feat(feat_dir, feat_name, FeatSource.ITEM)
 
     def _build_feat_name_list(self):
         feat_name_list = [
@@ -108,11 +137,13 @@ class RecboleDataset(TorchDataset):
         """分割训练集和测试集"""
         assert 0 < split_ratio < 1
         total_cnt = self.__len__()
-        split_ids = self._calcu_split_ids(
-            total_cnt, [split_ratio, 1 - split_ratio])
+        total_ids = np.arange(total_cnt)
+        train_ids = np.random.choice(total_ids, int(
+            total_cnt * split_ratio), replace=False)
+        print(train_ids)
+        test_ids = np.setdiff1d(total_ids, train_ids)
         next_index = [
-            range(start, end)
-            for start, end in zip([0] + split_ids, split_ids + [total_cnt])
+            train_ids, test_ids
         ]
         next_df = [self.inter_feat[index] for index in next_index]
         next_ds = [self.copy(_) for _ in next_df]

@@ -9,9 +9,9 @@ from logging import getLogger
 import numpy as np
 import torch
 import torch.nn as nn
-
-from recbole.model.layers import FMEmbedding, FMFirstOrderLinear, FLEmbedding
-from recbole.utils import ModelType, FeatureSource, FeatureType, set_color
+from data.dataset import RecboleDataset
+from recbole.utils import set_color
+from utils.enums import FeatSource
 
 
 class AbstractRecommender(nn.Module):
@@ -42,7 +42,6 @@ class AbstractRecommender(nn.Module):
         """
         raise NotImplementedError
 
-
     def __str__(self):
         """
         Model prints with number of trainable parameters
@@ -61,16 +60,14 @@ class GeneralRecommender(AbstractRecommender):
     The base general recommender class provide the basic dataset and parameters information.
     """
 
-    def __init__(self, config, dataset):
+    def __init__(self, config, dataset: RecboleDataset):
         super(GeneralRecommender, self).__init__()
 
         # load dataset info
         self.USER_ID = config["USER_ID_FIELD"]
         self.ITEM_ID = config["ITEM_ID_FIELD"]
-        self.n_users = dataset.uid_num
-        self.n_items = dataset.iid_num
+        self.n_users = dataset.num(self.USER_ID, FeatSource.USER)
+        self.n_items = dataset.num(self.ITEM_ID, FeatSource.ITEM)
 
         # load parameters info
         self.device = config["device"]
-
-

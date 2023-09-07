@@ -179,7 +179,8 @@ class Trainer(AbstractTrainer):
         )
 
         scaler = GradScaler(enabled=self.enable_scaler)
-        for batch_idx, interaction in enumerate(iter_data):
+        for batch_idx, batched_data in enumerate(iter_data):
+            interaction, positive_u, positive_i = batched_data
             interaction = interaction.to(self.device)
             self.optimizer.zero_grad()
             # 自动混合精度
@@ -413,14 +414,14 @@ class Trainer(AbstractTrainer):
             training_start_time = time.time()
             train_loss = self._train_epoch(
                 train_data, epoch_idx, show_progress=show_progress
-            )
+            ) 
             self.train_loss_dict[epoch_idx] = (
                 sum(train_loss) if isinstance(
                     train_loss, tuple) else train_loss
             )
             training_end_time = time.time()
             train_loss_output = self._generate_train_loss_output(
-                epoch_idx, training_start_time, training_end_time, train_loss
+                epoch_idx, training_start_time, training_end_time, train_loss / len(train_data)
             )
             if verbose:
                 self.logger.info(train_loss_output)

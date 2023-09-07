@@ -90,9 +90,12 @@ class GeneralTrainerDataLoader(AbstractDataLoader):
         self.step = batch_size
         self.set_batch_size(batch_size)
 
-    def collate_fn(self, index) -> Interaction:
+    def collate_fn(self, index) :
         index = np.array(index)
-        return self._dataset[index]
+        interaction = self._dataset[index]
+        positive_iid = interaction[self.iid_field]
+        positive_uid = interaction[self.uid_field]
+        return interaction, positive_uid, positive_iid
 
 
 class GeneralEvalDataLoader(AbstractDataLoader):

@@ -20,6 +20,7 @@ from torch.nn.utils import rnn as rnn_utils
 from torch.utils.data import Dataset as TorchDataset
 from trainer import Trainer
 from utils.logger import init_logger
+from recbole.utils import init_seed
 
 # %% [markdown]
 # ### TODO
@@ -45,6 +46,7 @@ config = Config(model="NeuMF", dataset=args.dataset)
 
 
 init_logger(config)
+init_seed(config["seed"], True)
 
 dataset = GeneralDataset(config)
 train_data, test_data = data_reparation(config, dataset)
