@@ -8,6 +8,7 @@ import torch
 from data.interaction import Interaction
 from root import DATASET_DIR
 from torch.utils.data import Dataset as TorchDataset
+from torch_geometric.utils import degree
 from utils.enums import FeatSource, FeatType
 
 
@@ -227,3 +228,36 @@ class RecboleDataset(TorchDataset):
 class GeneralDataset(RecboleDataset):
     def __init__(self, config):
         super().__init__(config)
+
+
+class GeneralGraphDataset(RecboleDataset):
+
+    def __init__(self, config):
+        super().__init__(config)
+
+    def get_norm_adj_mat(self):
+        r"""Get the normalized interaction matrix of users and items.
+        Construct the square matrix from the training data and normalize it
+        using the laplace matrix.
+        .. math::
+            A_{hat} = D^{-0.5} \times A \times D^{-0.5}
+        Returns:
+            The normalized interaction matrix in Tensor.
+        """
+
+        user_num = self.num(self.uid_field, FeatSource.INTERACTION)
+        item_num = self.num(self.iid_field, FeatSource.INTERACTION)
+
+        # 构建邻接矩阵 只用训练集数据
+        row = self.inter_feat[self.uid_field]
+        col = self.inter_feat[self.iid_field] + user_num
+        edge_index1 = torch.stack([row, col])
+        edge_index2 = torch.stack([col, row])
+        edge_index = torch.cat([edge_index1, edge_index2], dim=1)
+        deg = degree(edge_index[0], user_num + item_num)
+
+        # 如果度=0，那么就是一个新用户，这个用户没有任何交互，所以这里的处理是将du设置为1
+        norm_deg = 1. / torch.sqrt(torch.where(deg == 0, torch.ones([1]), deg))
+        edge_weight = norm_deg[edge_index[0]] * norm_deg[edge_index[1]]
+
+        return edge_index, edge_weight

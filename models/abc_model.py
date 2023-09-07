@@ -9,7 +9,7 @@ from logging import getLogger
 import numpy as np
 import torch
 import torch.nn as nn
-from data.dataset import RecboleDataset
+from data.dataset import GeneralGraphDataset, RecboleDataset
 from recbole.utils import set_color
 from utils.enums import FeatSource
 
@@ -71,3 +71,15 @@ class GeneralRecommender(AbstractRecommender):
 
         # load parameters info
         self.device = config["device"]
+
+
+class GeneralGraphRecommender(GeneralRecommender):
+    """This is an abstract general graph recommender. All the general graph models should implement in this class.
+    The base general graph recommender class provide the basic U-I graph dataset and parameters information.
+    """
+
+    def __init__(self, config, dataset: GeneralGraphDataset):
+        super(GeneralGraphRecommender, self).__init__(config, dataset)
+        self.edge_index, self.edge_weight = dataset.get_norm_adj_mat()
+        self.edge_index, self.edge_weight = self.edge_index.to(
+            self.device), self.edge_weight.to(self.device)
