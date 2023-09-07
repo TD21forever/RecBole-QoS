@@ -39,7 +39,7 @@ init_seed(config["seed"], True)
 # dataset = GeneralDataset(config)
 dataset = GeneralGraphDataset(config)
 train_data, test_data = data_reparation(config, dataset)
-model = NGCF(config, dataset)
+model = NGCF(config, dataset).to(config["device"])
 trainer = Trainer(config, model)
 
 trainer.fit(train_data, test_data, saved=False, show_progress=True)

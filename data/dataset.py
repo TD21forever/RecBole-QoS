@@ -51,9 +51,7 @@ class RecboleDataset(TorchDataset):
         nan_flag = self.config["nan_flag"]
         if nan_flag is None:
             return
-        print("处理之前的数据量：", len(self.inter_feat))
         self.inter_feat = self.inter_feat[self.inter_feat[self.label_field] != -1]
-        print("处理之后的数据量：", len(self.inter_feat))
 
     def _reset_index(self):
         for feat_name in self.feat_name_list:
@@ -64,9 +62,7 @@ class RecboleDataset(TorchDataset):
                     "feat {} is empty, please check your data".format(
                         feat_name)
                 )
-            print(feat.index)
             feat.reset_index(drop=True, inplace=True)
-            print(feat.index)
 
     def _load_feat(self, feat_dir, feat_name, source: FeatSource):
         path = os.path.join(feat_dir, feat_name)
@@ -141,7 +137,6 @@ class RecboleDataset(TorchDataset):
         total_ids = np.arange(total_cnt)
         train_ids = np.random.choice(total_ids, int(
             total_cnt * split_ratio), replace=False)
-        print(train_ids)
         test_ids = np.setdiff1d(total_ids, train_ids)
         next_index = [
             train_ids, test_ids
