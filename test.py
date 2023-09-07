@@ -5,7 +5,7 @@ import argparse
 from config.configuration import Config
 from data.dataset import GeneralDataset, GeneralGraphDataset
 from data.utils import data_reparation
-from models import NGCF, NeuMF
+from models import NGCF, NeuMF, LightGCN
 from recbole.utils import init_seed
 from trainer import Trainer
 from utils.logger import init_logger
@@ -30,7 +30,7 @@ parser.add_argument(
 
 args, _ = parser.parse_known_args()
 
-config = Config(model="NGCF", dataset=args.dataset)
+config = Config(model="LightGCN", dataset=args.dataset)
 
 
 init_logger(config)
@@ -39,7 +39,8 @@ init_seed(config["seed"], True)
 # dataset = GeneralDataset(config)
 dataset = GeneralGraphDataset(config)
 train_data, test_data = data_reparation(config, dataset)
-model = NGCF(config, dataset).to(config["device"])
+# model = NGCF(config, dataset).to(config["device"])
+model =  LightGCN(config, dataset).to(config["device"])
 trainer = Trainer(config, model)
 
 trainer.fit(train_data, test_data, saved=False, show_progress=True)
