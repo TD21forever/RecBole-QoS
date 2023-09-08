@@ -35,7 +35,7 @@ class AbstractDataLoader(DataLoader):
             num_workers=config["worker"],
             shuffle=shuffle,
             generator=self.generator,
-            collate_fn=self.collate_fn
+            collate_fn=self.collate_fn # type: ignore
         )
 
     def _init_batch_size_and_step(self):

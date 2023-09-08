@@ -12,7 +12,7 @@ save_dataloaders: False         # (bool) Whether or not save split dataloaders.
 dataloaders_save_path: ~        # (str) The path of saved dataloaders.
 log_wandb: False                # (bool) Whether or not to use Weights & Biases(W&B).
 wandb_project: 'recbole-QoS'        # (str) The project to conduct experiments in W&B.
-shuffle: True                   # (bool) Whether or not to shuffle the training data before each epoch.
+shuffle: False                   # (bool) Whether or not to shuffle the training data before each epoch.
 
 # Training Settings
 epochs: 1000                     # (int) The number of training epochs.

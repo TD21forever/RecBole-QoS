@@ -6,10 +6,8 @@ import random
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.tensorboard import SummaryWriter
-
-
 from recbole.utils.enum_type import ModelType
+from torch.utils.tensorboard import SummaryWriter
 
 
 def get_local_time():
@@ -53,7 +51,8 @@ def get_model(model_name):
 
     if model_module is None:
         raise ValueError(
-            "`model_name` [{}] is not the name of an existing model.".format(model_name)
+            "`model_name` [{}] is not the name of an existing model.".format(
+                model_name)
         )
     model_class = getattr(model_module, model_name)
     return model_class
@@ -78,7 +77,8 @@ def get_trainer(model_type, model_name):
             return getattr(importlib.import_module("recbole.trainer"), "KGTrainer")
         elif model_type == ModelType.TRADITIONAL:
             return getattr(
-                importlib.import_module("recbole.trainer"), "TraditionalTrainer"
+                importlib.import_module(
+                    "recbole.trainer"), "TraditionalTrainer"
             )
         else:
             return getattr(importlib.import_module("recbole.trainer"), "Trainer")
@@ -155,7 +155,8 @@ def dict2str(result_dict):
     """
 
     return "    ".join(
-        [str(metric) + " : " + str(value) for metric, value in result_dict.items()]
+        [str(metric) + " : " + str(value)
+         for metric, value in result_dict.items()]
     )
 
 
@@ -196,7 +197,8 @@ def get_tensorboard(logger):
     dir_name = None
     for handler in logger.handlers:
         if hasattr(handler, "baseFilename"):
-            dir_name = os.path.basename(getattr(handler, "baseFilename")).split(".")[0]
+            dir_name = os.path.basename(
+                getattr(handler, "baseFilename")).split(".")[0]
             break
     if dir_name is None:
         dir_name = "{}-{}".format("model", get_local_time())
@@ -288,11 +290,13 @@ def get_flops(model, dataset, device, logger, verbose=False):
         if m_type in custom_ops:
             fn = custom_ops[m_type]
             if m_type not in types_collection and verbose:
-                logger.info("Customize rule %s() %s." % (fn.__qualname__, m_type))
+                logger.info("Customize rule %s() %s." %
+                            (fn.__qualname__, m_type))
         elif m_type in register_hooks:
             fn = register_hooks[m_type]
             if m_type not in types_collection and verbose:
-                logger.info("Register %s() for %s." % (fn.__qualname__, m_type))
+                logger.info("Register %s() for %s." %
+                            (fn.__qualname__, m_type))
         else:
             if m_type not in types_collection and verbose:
                 logger.warning(

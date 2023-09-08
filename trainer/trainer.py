@@ -195,7 +195,8 @@ class Trainer(AbstractTrainer):
                 total_loss = (
                     loss_tuple
                     if total_loss is None
-                    else tuple(map(sum, zip(total_loss, loss_tuple))) # type: ignore
+                    # type: ignore
+                    else tuple(map(sum, zip(total_loss, loss_tuple)))
                 )
             else:
                 loss = losses
@@ -203,7 +204,7 @@ class Trainer(AbstractTrainer):
                     losses.item() if total_loss is None else total_loss + losses.item()
                 )
             self._check_nan(loss)
-            scaler.scale(loss).backward() # type: ignore
+            scaler.scale(loss).backward()  # type: ignore
             scaler.step(self.optimizer)
             scaler.update()
             if self.gpu_available and show_progress:
@@ -414,14 +415,15 @@ class Trainer(AbstractTrainer):
             training_start_time = time.time()
             train_loss = self._train_epoch(
                 train_data, epoch_idx, show_progress=show_progress
-            ) 
+            )
             self.train_loss_dict[epoch_idx] = (
                 sum(train_loss) if isinstance(
                     train_loss, tuple) else train_loss
             )
             training_end_time = time.time()
             train_loss_output = self._generate_train_loss_output(
-                epoch_idx, training_start_time, training_end_time, train_loss / len(train_data)
+                epoch_idx, training_start_time, training_end_time, train_loss /
+                len(train_data)
             )
             if verbose:
                 self.logger.info(train_loss_output)

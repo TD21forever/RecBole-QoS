@@ -87,7 +87,6 @@ class EmbeddingHelper:
         model = self.get_models(model_type)
         embeddings = model.embed_documents(self.info2template(type_, template_type))
         if auto_save:
-            print("saved")
             self.save_embedding(embeddings, file_name)
         return embeddings
     
