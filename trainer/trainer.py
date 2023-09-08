@@ -279,7 +279,7 @@ class Trainer(AbstractTrainer):
                 eval_data,
                 total=len(eval_data),
                 ncols=100,
-                desc=set_color(f"Evaluate   ", "green"),
+                desc=set_color(f"Evaluate   ", "red"),
             )
             if show_progress
             else eval_data

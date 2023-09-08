@@ -74,7 +74,7 @@ def init_logger(config):
     filedatefmt = "%y-%m-%d %H:%M:%S"
     fileformatter = logging.Formatter(filefmt, filedatefmt)
 
-    sfmt = "%(log_color)s%(asctime)-15s %(levelname)s  %(message)s"
+    sfmt = "[%(log_color)s%(asctime)-15s] [%(levelname)s]  %(message)s"
     sdatefmt = "%y-%m-%d %H:%M:%S"
     sformatter = colorlog.ColoredFormatter(
         sfmt, sdatefmt, log_colors=log_colors_config)

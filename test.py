@@ -63,7 +63,7 @@ logger.info(set_color("FLOPs", "blue") + f": {flops}")
 
 trainer = Trainer(config, model)
 best_valid_score, best_valid_result = trainer.fit(
-    train_data, test_data, saved=False, show_progress=bool(config["show_progress"]))
+    train_data, test_data, saved=True, show_progress=bool(config["show_progress"]))
 
 logger.info(set_color("best valid ", "yellow") + f": {best_valid_result}")
 
