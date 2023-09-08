@@ -11,6 +11,44 @@ from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops
 
 
+class ResidualLayer(nn.Module):
+    r"""ResidualLayer
+
+    Args:
+        - input_size(int): 输入特征的大小
+        - hidden_size(int): 隐藏层的大小
+        - dropout(float): probability of an element to be zeroed. Default: 0
+        - activation(str): activation function after each layer in residual layer. Default: 'relu'.
+                           candidates: 'sigmoid', 'tanh', 'relu', 'leekyrelu', 'none'
+
+    Shape:
+
+        - Input: (:math:`N`, :math:`H_{in}`)
+        - Output: (:math:`N`, :math:`H_{out}`)
+
+    Examples::
+
+        >>> m = ResidualLayer(64, 32, 0.2, 'relu')
+        >>> input = torch.randn(128, 64)
+        >>> output = m(input)
+        >>> print(output.size())
+        >>> torch.Size([128, 32])
+    """
+
+    def __init__(self, input_size, hidden_size, dropout=0.0, activation="relu", bn=False):
+        super(ResidualLayer, self).__init__()
+                
+        layers = [input_size, hidden_size, input_size]
+        self.mlp_layer = MLPLayers(layers=layers, dropout=dropout, activation=activation, bn=bn)
+        
+    def forward(self, input_feature):
+        residual = input_feature
+
+        x = self.mlp_layer(input_feature)
+        output = x + residual  # 残差连接
+        
+        return output
+
 class MLPLayers(nn.Module):
     r"""MLPLayers
 

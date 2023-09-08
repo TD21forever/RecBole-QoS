@@ -15,7 +15,7 @@ Reference code:
 import numpy as np
 import torch
 from models.abc_model import GeneralGraphRecommender
-from models.layers import LightGCNConv
+from models.layers import LightGCNConv, ResidualLayer
 from recbole.model.init import xavier_uniform_initialization
 from recbole.model.loss import EmbLoss
 from torch import nn
@@ -67,8 +67,13 @@ class XXX(GeneralGraphRecommender):
         else:
             self._get_pretrained_embedding()
         
-        embedding_shape = self.user_embedding.weight.shape[1]
-        self.line = [embedding_shape * 2] + config["line_layers"]
+        
+        embedding_size = self.user_embedding.weight.shape[1]
+        
+        self.u_embedding_residual = ResidualLayer(embedding_size, 512, dropout=self.dropout_prob, bn=self.use_bn)
+        self.i_embedding_residual = ResidualLayer(embedding_size, 512, dropout=self.dropout_prob, bn=self.use_bn)
+        
+        self.line = [embedding_size * 2] + config["line_layers"]
         self.affine = MLPLayers(self.line, dropout=self.dropout_prob, bn=self.use_bn)
         self.output_layer = nn.Linear(self.line[-1], 1)
         
@@ -129,6 +134,9 @@ class XXX(GeneralGraphRecommender):
         u_embeddings = user_all_embeddings[uid]
         i_embeddings = item_all_embeddings[iid]
         
+        u_embeddings = self.u_embedding_residual(u_embeddings)
+        i_embeddings = self.i_embedding_residual(i_embeddings)
+        
         u_i_embeddings = torch.cat([u_embeddings, i_embeddings], dim=1)
         x = self.affine(u_i_embeddings)
         output = self.output_layer(x).squeeze(-1)
@@ -138,9 +146,9 @@ class XXX(GeneralGraphRecommender):
         # calculate regularization Loss
         u_ego_embeddings = self.user_embedding(uid)
         i_ego_embeddings = self.item_embedding(iid)
-
         reg_loss = self.reg_loss(
             u_ego_embeddings, i_ego_embeddings, require_pow=self.require_pow)
+        
         loss = task_loss + self.reg_weight * reg_loss
 
         return loss
@@ -153,6 +161,9 @@ class XXX(GeneralGraphRecommender):
 
         u_embeddings = user_all_embeddings[user]
         i_embeddings = item_all_embeddings[item]
+        
+        u_embeddings = self.u_embedding_residual(u_embeddings)
+        i_embeddings = self.i_embedding_residual(i_embeddings)
 
         u_i_embeddings = torch.cat([u_embeddings, i_embeddings], dim=1)
         x = self.affine(u_i_embeddings)
