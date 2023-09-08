@@ -10,7 +10,7 @@ save_dataset: False             # (bool) Whether or not to save filtered dataset
 dataset_save_path: ~            # (str) The path of saved dataset.
 save_dataloaders: False         # (bool) Whether or not save split dataloaders.
 dataloaders_save_path: ~        # (str) The path of saved dataloaders.
-log_wandb: False                # (bool) Whether or not to use Weights & Biases(W&B).
+log_wandb: True                # (bool) Whether or not to use Weights & Biases(W&B).
 wandb_project: 'recbole-QoS'        # (str) The project to conduct experiments in W&B.
 shuffle: False                   # (bool) Whether or not to shuffle the training data before each epoch.
 

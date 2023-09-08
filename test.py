@@ -27,6 +27,7 @@ warnings.filterwarnings("ignore")
 # - 不同显卡切换貌似没起作用
 # - 测试流程整理,增加初始化 ✅
 # - loss计算方式的优化
+# - wandb_project
 
 # %%
 
@@ -62,7 +63,7 @@ logger.info(set_color("FLOPs", "blue") + f": {flops}")
 
 trainer = Trainer(config, model)
 best_valid_score, best_valid_result = trainer.fit(
-    train_data, test_data, saved=False, show_progress=True)
+    train_data, test_data, saved=False, show_progress=bool(config["show_progress"]))
 
 logger.info(set_color("best valid ", "yellow") + f": {best_valid_result}")
 

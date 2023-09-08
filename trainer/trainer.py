@@ -9,8 +9,8 @@ from data.interaction import Interaction
 from evaluator.collector import Collector
 from evaluator.evaluator import Evaluator
 from models.abc_model import AbstractRecommender
-from recbole.utils import (dict2str, early_stopping, ensure_dir, get_gpu_usage,
-                           get_local_time, set_color)
+from recbole.utils import (WandbLogger, dict2str, early_stopping, ensure_dir,
+                           get_gpu_usage, get_local_time, set_color)
 from torch import optim
 from torch.amp.autocast_mode import autocast
 from torch.cuda.amp.grad_scaler import GradScaler
@@ -55,27 +55,37 @@ class Trainer(AbstractTrainer):
     def __init__(self, config, model: AbstractRecommender):
         super(Trainer, self).__init__(config, model)
 
+        # Train Parameters
         self.learner = config["learner"]
         self.learning_rate = config["learning_rate"]
         self.epochs = config["epochs"]
+        self.weight_decay = config["weight_decay"]
+
+        # Eval Parameters
         self.eval_step: int = min(config["eval_step"], self.epochs)
         self.stopping_step = config["stopping_step"]
         self.valid_metric = config["valid_metric"].lower()
         self.valid_metric_bigger = config["valid_metric_bigger"]  # 是不是越大越好
         self.test_batch_size = config["eval_batch_size"]
+
+        # Common Parameters
         self.gpu_available = torch.cuda.is_available() and config["use_gpu"]
         self.device = config["device"]
+
+        # Utils Parameters
         self.checkpoint_dir = config["checkpoint_dir"]
-        self.enable_amp = config["enable_amp"]
-        self.enable_scaler = torch.cuda.is_available(
-        ) and config["enable_scaler"]
-        self.enable_amp = config["enable_amp"]
         ensure_dir(self.checkpoint_dir)
         saved_model_file = "{}-{}.pth".format(
             self.config["model"], get_local_time())
         self.saved_model_file = os.path.join(
             self.checkpoint_dir, saved_model_file)
-        self.weight_decay = config["weight_decay"]
+        self.wandblogger = WandbLogger(config)
+
+        # Optimizer Parameters
+        self.enable_amp = config["enable_amp"]
+        self.enable_scaler = torch.cuda.is_available(
+        ) and config["enable_scaler"]
+        self.enable_amp = config["enable_amp"]
 
         self.start_epoch = 0
         self.cur_step = 0
@@ -430,10 +440,11 @@ class Trainer(AbstractTrainer):
 
             # TODO
             # self._add_train_loss_to_tensorboard(epoch_idx, train_loss)
-            # self.wandblogger.log_metrics(
-            #     {"epoch": epoch_idx, "train_loss": train_loss, "train_step": epoch_idx},
-            #     head="train",
-            # )
+            self.wandblogger.log_metrics(
+                {"epoch": epoch_idx, "train_loss": train_loss,
+                    "train_step": epoch_idx},
+                head="train",
+            )
 
             # eval
             if self.eval_step <= 0 or not valid_data:
@@ -477,9 +488,9 @@ class Trainer(AbstractTrainer):
                     self.logger.info(valid_result_output)
             #         ...
             #     # self.tensorboard.add_scalar("Vaild_score", valid_score, epoch_idx)
-            #     # self.wandblogger.log_metrics(
-            #     #     {**valid_result, "valid_step": valid_step}, head="valid"
-            #     # )
+                self.wandblogger.log_metrics(
+                    {**valid_result, "valid_step": valid_step}, head="valid"
+                )
 
                 if update_flag:
                     #         if saved:
