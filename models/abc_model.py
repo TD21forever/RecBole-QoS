@@ -63,6 +63,7 @@ class GeneralRecommender(AbstractRecommender):
     def __init__(self, config, dataset: RecboleDataset):
         super(GeneralRecommender, self).__init__()
 
+        self.config = config
         # load dataset info
         self.USER_ID = config["USER_ID_FIELD"]
         self.ITEM_ID = config["ITEM_ID_FIELD"]

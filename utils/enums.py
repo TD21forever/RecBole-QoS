@@ -42,3 +42,40 @@ class FeatSource(Enum):
     INTERACTION = "inter"
     USER = "user"
     ITEM = "item"
+
+
+
+class EmbeddingType(Enum):
+    USER = "user"
+    ITEM = "item"
+    
+    @classmethod
+    def from_code(cls, code:str):
+        for model in cls:
+            if model.value == code:
+                return model
+        return None
+
+    
+class EmbeddingModel(Enum):
+    INSTRUCTOR_LARGE = "il"
+    INSTRUCTOR_E5 = "e5"
+    INSTRUCTOR_XL = "ixl"
+    INSTRUCTOR_BGE_SMALL = "bge-small"
+    
+    @classmethod
+    def from_code(cls, code:str):
+        for model in cls:
+            if model.value == code:
+                return model
+        return None
+    
+class TemplateType(Enum):
+    BASIC = "basic"
+    
+    @classmethod
+    def from_code(cls, code:str):
+        for model in cls:
+            if model.value == code:
+                return model
+        return None

@@ -22,6 +22,7 @@ from utils.logger import init_logger
 # - 日志 ✅
 # - 不同显卡切换貌似没起作用
 # - 测试流程整理,增加初始化
+# - loss计算方式的优化
 
 # %%
 
