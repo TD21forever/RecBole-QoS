@@ -25,6 +25,7 @@ class EmbeddingHelper:
         
         self.upath = os.path.join(ORIGINAL_DATASET_DIR, "userlist.txt")
         self.ipath = os.path.join(ORIGINAL_DATASET_DIR, "wslist.txt")
+        self.suffix = ".npy"
         self._load_user_and_item()   
             
     @property
@@ -71,7 +72,7 @@ class EmbeddingHelper:
             np.save(saved_path, embed_data)
         
     def load_embedding(self, embed_name):
-        saved_path = os.path.join(self.embedding_path, embed_name)
+        saved_path = os.path.join(self.embedding_path, embed_name + self.suffix)
         if not os.path.exists(saved_path):
             raise FileNotFoundError
         return np.load(saved_path)
@@ -81,11 +82,12 @@ class EmbeddingHelper:
         file_name = hashlib.md5(combined_string.encode()).hexdigest()[:6]
         try:
             return self.load_embedding(file_name)
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             pass
         model = self.get_models(model_type)
         embeddings = model.embed_documents(self.info2template(type_, template_type))
         if auto_save:
+            print("saved")
             self.save_embedding(embeddings, file_name)
         return embeddings
     
