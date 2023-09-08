@@ -10,7 +10,8 @@ from evaluator.collector import Collector
 from evaluator.evaluator import Evaluator
 from models.abc_model import AbstractRecommender
 from recbole.utils import (WandbLogger, dict2str, early_stopping, ensure_dir,
-                           get_gpu_usage, get_local_time, set_color)
+                           get_gpu_usage, get_local_time, get_tensorboard,
+                           set_color)
 from torch import optim
 from torch.amp.autocast_mode import autocast
 from torch.cuda.amp.grad_scaler import GradScaler
@@ -67,39 +68,38 @@ class Trainer(AbstractTrainer):
         self.valid_metric = config["valid_metric"].lower()
         self.valid_metric_bigger = config["valid_metric_bigger"]  # 是不是越大越好
         self.test_batch_size = config["eval_batch_size"]
+        self.eval_collector = Collector(config)
+        self.evaluator = Evaluator(config)
 
         # Common Parameters
         self.gpu_available = torch.cuda.is_available() and config["use_gpu"]
         self.device = config["device"]
 
         # Utils Parameters
+        self.logger = getLogger()
         self.checkpoint_dir = config["checkpoint_dir"]
         ensure_dir(self.checkpoint_dir)
         saved_model_file = "{}-{}.pth".format(
             self.config["model"], get_local_time())
         self.saved_model_file = os.path.join(
             self.checkpoint_dir, saved_model_file)
-        self.wandblogger = WandbLogger(config)
+        self.wandblogger = WandbLogger(config)  # 阿卡姆剃刀,暂时不用
+        self.tensorboard = get_tensorboard(self.logger)
 
         # Optimizer Parameters
         self.enable_amp = config["enable_amp"]
         self.enable_scaler = torch.cuda.is_available(
         ) and config["enable_scaler"]
         self.enable_amp = config["enable_amp"]
+        self.optimizer = self._build_optimizer()
 
         self.start_epoch = 0
         self.cur_step = 0
         self.best_valid_score = -np.inf if self.valid_metric_bigger else np.inf
         self.best_valid_result = None
         self.train_loss_dict = dict()
-        self.optimizer = self._build_optimizer()
-        self.eval_type = config["eval_type"]
-        self.eval_collector = Collector(config)
-        self.evaluator = Evaluator(config)
         self.item_tensor = None
         self.tot_item_num = None
-
-        self.logger = getLogger()
 
     def _build_optimizer(self, **kwargs):
         r"""Init the Optimizer
@@ -275,7 +275,7 @@ class Trainer(AbstractTrainer):
                 eval_data,
                 total=len(eval_data),
                 ncols=100,
-                desc=set_color(f"Evaluate   ", "pink"),
+                desc=set_color(f"Evaluate   ", "green"),
             )
             if show_progress
             else eval_data
@@ -353,43 +353,43 @@ class Trainer(AbstractTrainer):
                                            "blue") + ": " + des % losses
         return train_loss_output + "]"
 
-    # def _add_train_loss_to_tensorboard(self, epoch_idx, losses, tag="Loss/Train"):
-    #     if isinstance(losses, tuple):
-    #         for idx, loss in enumerate(losses):
-    #             self.tensorboard.add_scalar(tag + str(idx), loss, epoch_idx)
-    #     else:
-    #         self.tensorboard.add_scalar(tag, losses, epoch_idx)
+    def _add_train_loss_to_tensorboard(self, epoch_idx, losses, tag="Loss/Train"):
+        if isinstance(losses, tuple):
+            for idx, loss in enumerate(losses):
+                self.tensorboard.add_scalar(tag + str(idx), loss, epoch_idx)
+        else:
+            self.tensorboard.add_scalar(tag, losses, epoch_idx)
 
-    # def _add_hparam_to_tensorboard(self, best_valid_result):
-    #     # base hparam
-    #     hparam_dict = {
-    #         "learner": self.config["learner"],
-    #         "learning_rate": self.config["learning_rate"],
-    #         "train_batch_size": self.config["train_batch_size"],
-    #     }
-    #     # unrecorded parameter
-    #     unrecorded_parameter = {
-    #         parameter
-    #         for parameters in self.config.parameters.values()
-    #         for parameter in parameters
-    #     }.union({"model", "dataset", "config_files", "device"})
-    #     # other model-specific hparam
-    #     hparam_dict.update(
-    #         {
-    #             para: val
-    #             for para, val in self.config.final_config_dict.items()
-    #             if para not in unrecorded_parameter
-    #         }
-    #     )
-    #     for k in hparam_dict:
-    #         if hparam_dict[k] is not None and not isinstance(
-    #             hparam_dict[k], (bool, str, float, int)
-    #         ):
-    #             hparam_dict[k] = str(hparam_dict[k])
+    def _add_hparam_to_tensorboard(self, best_valid_result):
+        # base hparam
+        hparam_dict = {
+            "learner": self.config["learner"],
+            "learning_rate": self.config["learning_rate"],
+            "train_batch_size": self.config["train_batch_size"],
+        }
+        # unrecorded parameter
+        unrecorded_parameter = {
+            parameter
+            for parameters in self.config.parameters.values()
+            for parameter in parameters
+        }.union({"model", "dataset", "config_files", "device"})
+        # other model-specific hparam
+        hparam_dict.update(
+            {
+                para: val
+                for para, val in self.config.final_config_dict.items()
+                if para not in unrecorded_parameter
+            }
+        )
+        for k in hparam_dict:
+            if hparam_dict[k] is not None and not isinstance(
+                hparam_dict[k], (bool, str, float, int)
+            ):
+                hparam_dict[k] = str(hparam_dict[k])
 
-    #     self.tensorboard.add_hparams(
-    #         hparam_dict, {"hparam/best_valid_result": best_valid_result}
-    #     )
+        self.tensorboard.add_hparams(
+            hparam_dict, {"hparam/best_valid_result": best_valid_result}
+        )
 
     def fit(
         self,
@@ -439,7 +439,7 @@ class Trainer(AbstractTrainer):
                 self.logger.info(train_loss_output)
 
             # TODO
-            # self._add_train_loss_to_tensorboard(epoch_idx, train_loss)
+            self._add_train_loss_to_tensorboard(epoch_idx, train_loss)
             self.wandblogger.log_metrics(
                 {"epoch": epoch_idx, "train_loss": train_loss,
                     "train_step": epoch_idx},

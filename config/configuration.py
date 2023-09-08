@@ -338,7 +338,7 @@ class Config(object):
     def __str__(self):
         args_info = "\n"
         for category in self.parameters:
-            args_info += set_color(category + " Hyper Parameters:\n", "pink")
+            args_info += set_color(category + " Hyper Parameters:\n", "green")
             args_info += "\n".join(
                 [
                     (
@@ -350,7 +350,7 @@ class Config(object):
             )
             args_info += "\n\n"
 
-        args_info += set_color("Other Hyper Parameters: \n", "pink")
+        args_info += set_color("Other Hyper Parameters: \n", "green")
         args_info += "\n".join(
             [
                 (set_color("{}", "cyan") + " = " + set_color("{}", "yellow")).format(
