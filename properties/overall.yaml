@@ -13,7 +13,7 @@ dataloaders_save_path: ~        # (str) The path of saved dataloaders.
 log_wandb: False                # (bool) Whether or not to use Weights & Biases(W&B).
 wandb_project: 'recbole-QoS'        # (str) The project to conduct experiments in W&B.
 shuffle: False                   # (bool) Whether or not to shuffle the training data before each epoch.
-state: "info"
+state: 'info'
 
 # Training Settings
 epochs: 1000                     # (int) The number of training epochs.
@@ -21,7 +21,7 @@ train_batch_size: 512          # (int) The training batch size.
 learner: adam                   # (str) The name of used optimizer.
 learning_rate: 0.0005           # (float) Learning rate.
 weight_decay: 0.0               # (float) The weight decay value (L2 penalty) for optimizers.
-eval_step: 10                    # (int) The number of training epochs before an evaluation on the valid dataset.
+eval_step: 1                    # (int) The number of training epochs before an evaluation on the valid dataset.
 stopping_step: 10               # (int) The threshold for validation-based early stopping.
 clip_grad_norm: ~               # (dict) The args of clip_grad_norm_ which will clip gradient norm of model. 
 loss_decimal_place: 4           # (int) The decimal place of training loss.
