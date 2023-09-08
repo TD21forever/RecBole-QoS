@@ -20,14 +20,14 @@ warnings.filterwarnings("ignore")
 # - NGCF ✅
 # - LightGCN ✅
 # - 所有代码整体过一遍
-# - tensorboard
+# - tensorboard ✅
 # - 训练参数整理
 # - checkpoint逻辑
 # - 日志 ✅
 # - 不同显卡切换貌似没起作用
 # - 测试流程整理,增加初始化 ✅
 # - loss计算方式的优化
-# - wandb_project
+# - wandb_project ✅
 
 # %%
 

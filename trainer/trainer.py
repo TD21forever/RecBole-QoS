@@ -197,7 +197,6 @@ class Trainer(AbstractTrainer):
             with autocast(device_type=self.device.type, enabled=self.enable_amp):
                 losses = loss_func(interaction)
 
-            # 不理解为什么会有tuple类型的loss,先留着
             if isinstance(losses, tuple):
                 self.logger.debug("LOSS类型是tuple")
                 loss = sum(losses)
@@ -205,7 +204,6 @@ class Trainer(AbstractTrainer):
                 total_loss = (
                     loss_tuple
                     if total_loss is None
-                    # type: ignore
                     else tuple(map(sum, zip(total_loss, loss_tuple)))
                 )
             else:
@@ -213,6 +211,7 @@ class Trainer(AbstractTrainer):
                 total_loss = (
                     losses.item() if total_loss is None else total_loss + losses.item()
                 )
+            
             self._check_nan(loss)
             scaler.scale(loss).backward()  # type: ignore
             scaler.step(self.optimizer)
@@ -222,6 +221,12 @@ class Trainer(AbstractTrainer):
                     set_color("GPU RAM: " +
                               get_gpu_usage(self.device), "yellow")
                 )
+        if isinstance(total_loss, tuple):
+            total_loss = tuple(loss / len(train_data) for loss in total_loss)
+        elif total_loss is not None:
+            total_loss = total_loss / len(train_data)
+        else:
+            raise ValueError("The training loss is None")
         return total_loss
 
     def _save_checkpoint(self, epoch, verbose=True, **kwargs):
@@ -231,8 +236,7 @@ class Trainer(AbstractTrainer):
             epoch (int): the current epoch id
 
         """
-        if not self.config["single_spec"] and self.config["local_rank"] != 0:
-            return
+    
         saved_model_file = kwargs.pop(
             "saved_model_file", self.saved_model_file)
         state = {
@@ -241,7 +245,7 @@ class Trainer(AbstractTrainer):
             "cur_step": self.cur_step,
             "best_valid_score": self.best_valid_score,
             "state_dict": self.model.state_dict(),
-            "other_parameter": self.model.other_parameter(),
+            "other_parameter": self.model.other_parameter(),  # type: ignore
             "optimizer": self.optimizer.state_dict(),
         }
         torch.save(state, saved_model_file, pickle_protocol=4)
@@ -315,11 +319,10 @@ class Trainer(AbstractTrainer):
 
         # load architecture params from checkpoint
         if checkpoint["config"]["model"].lower() != self.config["model"].lower():
-            ...
-            # self.logger.warning(
-            #     "Architecture configuration given in config file is different from that of checkpoint. "
-            #     "This may yield an exception while state_dict is being loaded."
-            # )
+            self.logger.warning(
+                "Architecture configuration given in config file is different from that of checkpoint. "
+                "This may yield an exception while state_dict is being loaded."
+            )
         self.model.load_state_dict(checkpoint["state_dict"])
         self.model.load_other_parameter(checkpoint.get("other_parameter"))
 
@@ -328,7 +331,7 @@ class Trainer(AbstractTrainer):
         message_output = "Checkpoint loaded. Resume training from epoch {}".format(
             self.start_epoch
         )
-        # self.logger.info(message_output)
+        self.logger.info(message_output)
 
     def _check_nan(self, loss):
         if torch.isnan(loss):
@@ -426,19 +429,13 @@ class Trainer(AbstractTrainer):
             train_loss = self._train_epoch(
                 train_data, epoch_idx, show_progress=show_progress
             )
-            self.train_loss_dict[epoch_idx] = (
-                sum(train_loss) if isinstance(
-                    train_loss, tuple) else train_loss
-            )
             training_end_time = time.time()
             train_loss_output = self._generate_train_loss_output(
-                epoch_idx, training_start_time, training_end_time, train_loss /
-                len(train_data)
+                epoch_idx, training_start_time, training_end_time, train_loss
             )
             if verbose:
                 self.logger.info(train_loss_output)
 
-            # TODO
             self._add_train_loss_to_tensorboard(epoch_idx, train_loss)
             self.wandblogger.log_metrics(
                 {"epoch": epoch_idx, "train_loss": train_loss,
@@ -486,15 +483,15 @@ class Trainer(AbstractTrainer):
                 if verbose:
                     self.logger.info(valid_score_output)
                     self.logger.info(valid_result_output)
-            #         ...
-            #     # self.tensorboard.add_scalar("Vaild_score", valid_score, epoch_idx)
+                    
+                self.tensorboard.add_scalar("Vaild_score", valid_score, epoch_idx)
                 self.wandblogger.log_metrics(
                     {**valid_result, "valid_step": valid_step}, head="valid"
                 )
 
                 if update_flag:
-                    #         if saved:
-                    #             self._save_checkpoint(epoch_idx, verbose=verbose)
+                    if saved:
+                        self._save_checkpoint(epoch_idx, verbose=verbose)
                     self.best_valid_result = valid_result
 
                 if callback_fn:
@@ -510,7 +507,7 @@ class Trainer(AbstractTrainer):
 
                 valid_step += 1
 
-        # self._add_hparam_to_tensorboard(self.best_valid_score)
+        self._add_hparam_to_tensorboard(self.best_valid_score)
         return self.best_valid_score, self.best_valid_result
 
     def _spilt_predict(self, interaction, batch_size):
