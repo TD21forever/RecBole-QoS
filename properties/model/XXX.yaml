@@ -1,0 +1,5 @@
+embedding_size: 128
+n_layers: 2
+reg_weight: 1e-5
+require_pow: True
+line_layers: [128,64,32]

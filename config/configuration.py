@@ -19,7 +19,6 @@ import yaml
 from logging import getLogger
 
 from recbole.utils import (
-    get_model,
     Enum,
     general_arguments,
     training_arguments,
@@ -27,6 +26,8 @@ from recbole.utils import (
     dataset_arguments,
     set_color,
 )
+
+from utils.utils import get_model
 
 
 class Config(object):
