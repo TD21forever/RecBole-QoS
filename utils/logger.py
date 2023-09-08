@@ -16,6 +16,7 @@ log_colors_config = {
 }
 
 
+
 class RemoveColorFilter(logging.Filter):
     def filter(self, record):
         if record:
