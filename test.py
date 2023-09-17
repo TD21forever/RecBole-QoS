@@ -34,7 +34,7 @@ warnings.filterwarnings("ignore")
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
-    "--dataset", "-d", type=str, default="wsdream-rt", help="name of datasets"
+    "--dataset", "-d", type=str, default="wsdream-tp", help="name of datasets"
 )
 
 parser.add_argument(
