@@ -4,6 +4,9 @@ mlp_hidden_size: [64,32,8]       # (list of int) The hidden size of each layer i
 dropout_prob: 0               # (float) The dropout rate in MLP layers. 
 mf_train: False                  # (bool) Whether to train the MF part of the model.
 mlp_train: True                 # (bool) Whether to train the MLP part of the model.
+use_mte: True
+apply_init: False
+freeze_embedding: False
 
 # Parameters of pre-trained models for initialization.
 use_pretrain: False             # (bool) Whether to use the pre-trained parameters for MF and MLP part.

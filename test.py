@@ -55,6 +55,7 @@ logger.info(config)
 dataset = GeneralGraphDataset(config)
 train_data, test_data = data_reparation(config, dataset)
 
+# 必须穿入train_data, 必须使用训练集的数据建图
 model = get_model(config["model"])(config, dataset).to(config["device"])
 logger.info(model)
 
@@ -67,5 +68,3 @@ best_valid_score, best_valid_result = trainer.fit(
 
 logger.info(set_color("best valid ", "yellow") + f": {best_valid_result}")
 
-
-# %%

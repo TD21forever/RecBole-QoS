@@ -8,6 +8,8 @@ Reference:
 import torch
 import torch.nn as nn
 from models.abc_model import GeneralRecommender
+from models.embedding import (EmbeddingHelper, EmbeddingModel, EmbeddingType,
+                              TemplateType)
 from models.layers import MLPLayers
 from torch.nn.init import normal_
 
@@ -38,18 +40,31 @@ class NeuMF(GeneralRecommender):
         self.use_pretrain = config["use_pretrain"]
         self.mf_pretrain_path = config["mf_pretrain_path"]
         self.mlp_pretrain_path = config["mlp_pretrain_path"]
+        self.use_embedding = config["use_mte"]
+        self.freeze_embedding = config["freeze_embedding"]
+        self.apply_init = config["apply_init"]
 
-        # define layers and loss
         self.user_mf_embedding = nn.Embedding(
             self.n_users, self.mf_embedding_size)
         self.item_mf_embedding = nn.Embedding(
             self.n_items, self.mf_embedding_size)
-        self.user_mlp_embedding = nn.Embedding(
-            self.n_users, self.mlp_embedding_size)
-        self.item_mlp_embedding = nn.Embedding(
-            self.n_items, self.mlp_embedding_size)
+
+        # define layers and loss
+        if not self.user_mf_embedding:
+
+            self.user_mlp_embedding = nn.Embedding(
+                self.n_users, self.mlp_embedding_size)
+
+            self.item_mlp_embedding = nn.Embedding(
+                self.n_items, self.mlp_embedding_size)
+
+        else:
+            self._get_pretrained_embedding()
+            
+        embedding_size = self.user_mlp_embedding.weight.shape[1]
+
         self.mlp_layers = MLPLayers(
-            [2 * self.mlp_embedding_size] +
+            [2 * embedding_size] +
             self.mlp_hidden_size, self.dropout_prob
         )
         if self.mf_train and self.mlp_train:
@@ -66,9 +81,19 @@ class NeuMF(GeneralRecommender):
         # parameters initialization
         if self.use_pretrain:
             self.load_pretrain()
-        else:
-            # self.apply(self._init_weights)
-            ...
+        elif self.apply_init:
+            self.apply(self._init_weights)
+
+    def _get_pretrained_embedding(self):
+        eh = EmbeddingHelper()
+        user_embedding = torch.Tensor(eh.fit(
+            EmbeddingType.USER, TemplateType.BASIC, EmbeddingModel.INSTRUCTOR_BGE_SMALL))
+        item_embedding = torch.Tensor(eh.fit(
+            EmbeddingType.ITEM, TemplateType.BASIC, EmbeddingModel.INSTRUCTOR_BGE_SMALL))
+        self.user_mlp_embedding = torch.nn.Embedding.from_pretrained(
+            user_embedding, self.freeze_embedding)
+        self.item_mlp_embedding = torch.nn.Embedding.from_pretrained(
+            item_embedding, self.freeze_embedding)
 
     def load_pretrain(self):
         r"""A simple implementation of loading pretrained parameters."""
