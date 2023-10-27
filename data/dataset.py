@@ -217,7 +217,7 @@ class RecboleDataset(TorchDataset):
         item_ids = inter_data[self.iid_field]
         labels = inter_data[self.label_field]
         assert isinstance(user_ids, Tensor) and isinstance(item_ids, Tensor) and isinstance(labels, Tensor)
-        return torch.stack((user_ids, item_ids, labels), 1)
+        return torch.stack((user_ids, item_ids, labels), 1).tolist()
 
     @property
     def uids_in_inter_feat(self):

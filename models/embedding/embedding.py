@@ -30,7 +30,7 @@ class EmbeddingHelper:
 
     @property
     def _user_info_header(self):
-        return ["user_id", "ip_address", "counrty", "ip_number", "AS", "latitude", "longitude"]
+        return ["user_id", "ip_address", "country", "ip_number", "AS", "latitude", "longitude"]
 
     @property
     def _item_info_header(self):
@@ -57,15 +57,15 @@ class EmbeddingHelper:
         
         res = []
         
-        for row_dict in info.to_dict(orient="records"):
+        for idx, row_dict in enumerate(info.to_dict(orient="records")):
             if isinstance(template_func, BasicTempalte):
                 template = template_func(row_dict)
             else:
                 if type_ == EmbeddingType.USER:
                     template = template_func(
-                        "user", row_dict, invocations=invocations)  # type: ignore
+                        type="user", invocations=invocations[idx], content=row_dict)  # type: ignore
                 else:
-                    template = template_func("item", **row_dict, invocations=invocations)
+                    template = template_func(type="item", invocations=invocations[idx], content=row_dict)
             res.append(str(template))
 
         return res

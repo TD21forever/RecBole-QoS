@@ -31,13 +31,12 @@ class BasicTempalte(Template):
 
 class ImprovedTemplate(Template):
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, type, content, invocations) -> None:
         super().__init__()
-        type_ = kwargs["type"]
-        if type_ == "user":
-            self.output = self.fit_user(**kwargs)
+        if type == "user":
+            self.output = self.fit_user(invocations=invocations, **content)
         else:
-            self.output = self.fit_service(**kwargs)
+            self.output = self.fit_service(invocations=invocations, **content)
 
     def fit_user(self, *, user_id, ip_address, country, ip_number, AS, latitude, longitude, invocations):
         template = f"""
