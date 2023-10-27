@@ -31,9 +31,10 @@ class BasicTempalte(Template):
 
 class ImprovedTemplate(Template):
 
-    def __init__(self, type, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__()
-        if type == "user":
+        type_ = kwargs["type"]
+        if type_ == "user":
             self.output = self.fit_user(**kwargs)
         else:
             self.output = self.fit_service(**kwargs)

@@ -54,9 +54,9 @@ class EmbeddingHelper:
             template_func = ImprovedTemplate
         else:
             raise ValueError
-
+        
         res = []
-
+        
         for row_dict in info.to_dict(orient="records"):
             if isinstance(template_func, BasicTempalte):
                 template = template_func(row_dict)

@@ -1,7 +1,7 @@
 import copy
 import os
 from typing import Dict
-
+from torch import Tensor
 import numpy as np
 import pandas as pd
 import torch
@@ -213,10 +213,11 @@ class RecboleDataset(TorchDataset):
             inter_data = self.inter_feat[self.inter_feat[self.iid_field] == id]
         else:
             raise ValueError(f"type {type} not found")
-        user_ids = inter_data[self.user_feat]
-        item_ids = inter_data[self.item_feat]
+        user_ids = inter_data[self.uid_field]
+        item_ids = inter_data[self.iid_field]
         labels = inter_data[self.label_field]
-        return torch.stack([user_ids, item_ids, labels], 1)
+        assert isinstance(user_ids, Tensor) and isinstance(item_ids, Tensor) and isinstance(labels, Tensor)
+        return torch.stack((user_ids, item_ids, labels), 1)
 
     @property
     def uids_in_inter_feat(self):
