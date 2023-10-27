@@ -38,7 +38,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--model", "-m", type=str, default="NeuMF", help="name of models"
+    "--model", "-m", type=str, default="XXX", help="name of models"
 )
 
 args, _ = parser.parse_known_args()
