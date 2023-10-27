@@ -56,10 +56,18 @@ class EmbeddingHelper:
             raise ValueError
 
         res = []
+
         for row_dict in info.to_dict(orient="records"):
-            template = template_func(
-                row_dict, invocations=invocations)  # type: ignore
+            if isinstance(template_func, BasicTempalte):
+                template = template_func(row_dict)
+            else:
+                if type_ == EmbeddingType.USER:
+                    template = template_func(
+                        "user", row_dict, invocations=invocations)  # type: ignore
+                else:
+                    template = template_func("item", **row_dict, invocations=invocations)
             res.append(str(template))
+
         return res
 
     @property
