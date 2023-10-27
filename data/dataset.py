@@ -206,13 +206,17 @@ class RecboleDataset(TorchDataset):
     
     def inter_data_by_type(self, type: str, id: int):
         """根据类型和id获取交互数据"""
+        assert isinstance(self.inter_feat, Interaction)
         if type == "user":
             inter_data = self.inter_feat[self.inter_feat[self.uid_field] == id]
         elif type == "item":
             inter_data = self.inter_feat[self.inter_feat[self.iid_field] == id]
         else:
             raise ValueError(f"type {type} not found")
-        return [tuple(row) for row in inter_data.values]
+        user_ids = inter_data[self.user_feat]
+        item_ids = inter_data[self.item_feat]
+        labels = inter_data[self.label_field]
+        return torch.stack([user_ids, item_ids, labels], 1)
 
     @property
     def uids_in_inter_feat(self):
