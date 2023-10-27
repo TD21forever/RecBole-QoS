@@ -50,7 +50,7 @@ class NeuMF(GeneralRecommender):
             self.n_items, self.mf_embedding_size)
 
         # define layers and loss
-        if not self.user_mf_embedding:
+        if not self.use_embedding:
 
             self.user_mlp_embedding = nn.Embedding(
                 self.n_users, self.mlp_embedding_size)

@@ -38,7 +38,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--model", "-m", type=str, default="XXX", help="name of models"
+    "--model", "-m", type=str, default="NeuMF", help="name of models"
 )
 
 args, _ = parser.parse_known_args()
@@ -55,8 +55,8 @@ logger.info(config)
 dataset = GeneralGraphDataset(config)
 train_data, test_data = data_reparation(config, dataset)
 
-# 必须穿入train_data, 必须使用训练集的数据建图
-model = get_model(config["model"])(config, dataset).to(config["device"])
+# 必须传入train_data, 必须使用训练集的数据建图
+model = get_model(config["model"])(config, train_data.dataset).to(config["device"])
 logger.info(model)
 
 flops = get_flops(model, dataset, config["device"], logger)
