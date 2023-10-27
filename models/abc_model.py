@@ -75,6 +75,7 @@ class GeneralRecommender(AbstractRecommender):
         super(GeneralRecommender, self).__init__()
 
         self.config = config
+        self.dataset = dataset
         # load dataset info
         self.USER_ID = config["USER_ID_FIELD"]
         self.ITEM_ID = config["ITEM_ID_FIELD"]

@@ -203,6 +203,24 @@ class RecboleDataset(TorchDataset):
         assert isinstance(self.inter_feat, Interaction)
         df = self.inter_feat[index]
         return self.join(df) if join else df
+    
+    def inter_data_by_type(self, type: str, id: int):
+        """根据类型和id获取交互数据"""
+        if type == "user":
+            inter_data = self.inter_feat[self.inter_feat[self.uid_field] == id]
+        elif type == "item":
+            inter_data = self.inter_feat[self.inter_feat[self.iid_field] == id]
+        else:
+            raise ValueError(f"type {type} not found")
+        return [tuple(row) for row in inter_data.values]
+
+    @property
+    def uids_in_inter_feat(self):
+        return self.inter_feat[self.uid_field].unique()
+        
+    @property
+    def iids_in_inter_feat(self):
+        return self.inter_feat[self.iid_field].unique()
 
     def join(self, df) -> Interaction:
         """Given interaction feature, join user/item feature into it.

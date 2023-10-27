@@ -34,7 +34,7 @@ warnings.filterwarnings("ignore")
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
-    "--dataset", "-d", type=str, default="wsdream-tp", help="name of datasets"
+    "--dataset", "-d", type=str, default="wsdream-rt", help="name of datasets"
 )
 
 parser.add_argument(
@@ -56,7 +56,7 @@ dataset = GeneralGraphDataset(config)
 train_data, test_data = data_reparation(config, dataset)
 
 # 必须穿入train_data, 必须使用训练集的数据建图
-model = get_model(config["model"])(config, dataset).to(config["device"])
+model = get_model(config["model"])(config, train_data.dataset).to(config["device"])
 logger.info(model)
 
 flops = get_flops(model, dataset, config["device"], logger)
