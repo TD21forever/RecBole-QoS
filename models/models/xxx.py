@@ -14,16 +14,16 @@ Reference code:
 
 import numpy as np
 import torch
-from models.abc_model import GeneralGraphRecommender
-from models.layers import LightGCNConv, ResidualLayer
+import torch.nn.functional as F
 from recbole.model.init import xavier_uniform_initialization
 from recbole.model.loss import EmbLoss
 from torch import nn
-from models.layers import MLPLayers
-from models.embedding import EmbeddingHelper
-from utils.enums import TemplateType, EmbeddingModel, EmbeddingType
-import torch.nn.functional as F
 from torch_geometric.utils import dropout_adj
+
+from models.abc_model import GeneralGraphRecommender
+from models.embedding import EmbeddingHelper
+from models.layers import LightGCNConv, MLPLayers, ResidualLayer
+from utils.enums import EmbeddingModel, EmbeddingType, TemplateType
 
 
 class XXX(GeneralGraphRecommender):
@@ -41,7 +41,7 @@ class XXX(GeneralGraphRecommender):
         self.label = config["LABEL_FIELD"]
 
         # load parameters info
-        
+
         # int type:the embedding size of lightGCN
         self.latent_dim = config['embedding_size']
         # int type:the layer num of lightGCN
@@ -51,7 +51,7 @@ class XXX(GeneralGraphRecommender):
         # bool type: whether to require pow when regularization
         self.require_pow = config['require_pow']
         # boll type: whether to use mte
-        self.use_embedding = config["use_mte"] 
+        self.use_embedding = config["use_mte"]
         self.freeze_embedding = config["freeze_embedding"]
         self.dropout_prob = config["dropout_prob"]
         self.use_bn = config["use_bn"]
@@ -66,29 +66,42 @@ class XXX(GeneralGraphRecommender):
                 num_embeddings=self.n_items, embedding_dim=self.latent_dim)
         else:
             self._get_pretrained_embedding()
-        
-        
+
         embedding_size = self.user_embedding.weight.shape[1]
-        
-        self.u_embedding_residual = ResidualLayer(embedding_size, 512, dropout=self.dropout_prob, bn=self.use_bn)
-        self.i_embedding_residual = ResidualLayer(embedding_size, 512, dropout=self.dropout_prob, bn=self.use_bn)
-        
+
+        self.u_embedding_residual = ResidualLayer(
+            embedding_size, 512, dropout=self.dropout_prob, bn=self.use_bn)
+        self.i_embedding_residual = ResidualLayer(
+            embedding_size, 512, dropout=self.dropout_prob, bn=self.use_bn)
+
         self.line = [embedding_size * 2] + config["line_layers"]
-        self.affine = MLPLayers(self.line, dropout=self.dropout_prob, bn=self.use_bn)
+        self.affine = MLPLayers(
+            self.line, dropout=self.dropout_prob, bn=self.use_bn)
         self.output_layer = nn.Linear(self.line[-1], 1)
-        
+
         self.gcn_conv = LightGCNConv(dim=self.latent_dim)
         self.reg_loss = EmbLoss()
         self.loss = nn.L1Loss()
-        
+
     def _get_pretrained_embedding(self):
         eh = EmbeddingHelper()
-        user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.BASIC, EmbeddingModel.INSTRUCTOR_BGE_SMALL))
-        item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.BASIC, EmbeddingModel.INSTRUCTOR_BGE_SMALL))
-        self.user_embedding = torch.nn.Embedding.from_pretrained(user_embedding, self.freeze_embedding)
-        self.item_embedding = torch.nn.Embedding.from_pretrained(item_embedding, self.freeze_embedding)
+        user_invocations = []
+        item_invocations = []
+        for uid in self.dataset.uids_in_inter_feat:
+            user_invocations.append(
+                self.dataset.inter_data_by_type("user", uid))
+        for iid in self.dataset.iids_in_inter_feat:
+            item_invocations.append(
+                self.dataset.inter_data_by_type("item", iid))
+        user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.IMPROVED,
+                                      EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=user_invocations, auto_save=False))
+        item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.IMPROVED,
+                                      EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
+        self.user_embedding = torch.nn.Embedding.from_pretrained(
+            user_embedding, self.freeze_embedding)
+        self.item_embedding = torch.nn.Embedding.from_pretrained(
+            item_embedding, self.freeze_embedding)
 
-    
     def get_ego_embeddings(self):
         r"""Get the embedding of users and items and combine to an embedding matrix.
         Returns:
@@ -102,7 +115,7 @@ class XXX(GeneralGraphRecommender):
     def forward(self):
         all_embeddings = self.get_ego_embeddings()
         embeddings_list = [all_embeddings]
-        
+
         if self.node_dropout == 0:
             edge_index, edge_weight = self.edge_index, self.edge_weight
         else:
@@ -133,10 +146,10 @@ class XXX(GeneralGraphRecommender):
 
         u_embeddings = user_all_embeddings[uid]
         i_embeddings = item_all_embeddings[iid]
-        
+
         u_embeddings = self.u_embedding_residual(u_embeddings)
         i_embeddings = self.i_embedding_residual(i_embeddings)
-        
+
         u_i_embeddings = torch.cat([u_embeddings, i_embeddings], dim=1)
         x = self.affine(u_i_embeddings)
         output = self.output_layer(x).squeeze(-1)
@@ -148,7 +161,7 @@ class XXX(GeneralGraphRecommender):
         i_ego_embeddings = self.item_embedding(iid)
         reg_loss = self.reg_loss(
             u_ego_embeddings, i_ego_embeddings, require_pow=self.require_pow)
-        
+
         loss = task_loss + self.reg_weight * reg_loss
 
         return loss
@@ -161,7 +174,7 @@ class XXX(GeneralGraphRecommender):
 
         u_embeddings = user_all_embeddings[user]
         i_embeddings = item_all_embeddings[item]
-        
+
         u_embeddings = self.u_embedding_residual(u_embeddings)
         i_embeddings = self.i_embedding_residual(i_embeddings)
 
