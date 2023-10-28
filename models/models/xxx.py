@@ -52,6 +52,7 @@ class XXX(GeneralGraphRecommender):
         self.require_pow = config['require_pow']
         # boll type: whether to use mte
         self.use_embedding = config["use_mte"]
+        self.use_improved_prompt = config["use_improved_prompt"]
         self.freeze_embedding = config["freeze_embedding"]
         self.dropout_prob = config["dropout_prob"]
         self.use_bn = config["use_bn"]
@@ -85,18 +86,22 @@ class XXX(GeneralGraphRecommender):
 
     def _get_pretrained_embedding(self):
         eh = EmbeddingHelper()
-        user_invocations = []
-        item_invocations = []
+        user_invocations = {}
+        item_invocations = {}
         for uid in self.dataset.uids_in_inter_feat:
-            user_invocations.append(
-                self.dataset.inter_data_by_type("user", uid))
+            user_invocations[uid] = self.dataset.inter_data_by_type("user", uid)
         for iid in self.dataset.iids_in_inter_feat:
-            item_invocations.append(
-                self.dataset.inter_data_by_type("item", iid))
-        user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.IMPROVED,
-                                      EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=user_invocations, auto_save=False))
-        item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.IMPROVED,
-                                      EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
+            item_invocations[iid] = self.dataset.inter_data_by_type("item", iid)
+        if self.use_improved_prompt:
+            user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.IMPROVED,
+                                        EmbeddingModel.INSTRUCTOR_BGE_LARGE, invocations=user_invocations, auto_save=False))
+            item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.IMPROVED,
+                                        EmbeddingModel.INSTRUCTOR_BGE_LARGE, invocations=item_invocations, auto_save=False))
+        else:
+            user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.BASIC,
+                                        EmbeddingModel.INSTRUCTOR_BGE_LARGE, invocations=user_invocations, auto_save=False))
+            item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.BASIC,
+                                        EmbeddingModel.INSTRUCTOR_BGE_LARGE, invocations=item_invocations, auto_save=False))
         self.user_embedding = torch.nn.Embedding.from_pretrained(
             user_embedding, self.freeze_embedding)
         self.item_embedding = torch.nn.Embedding.from_pretrained(

@@ -4,6 +4,7 @@ reg_weight: 0
 require_pow: True
 line_layers: [128, 64, 32]
 use_mte: True
+use_improved_prompt: True
 freeze_embedding: False
 dropout_prob: 0.1
 use_bn: True

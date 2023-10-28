@@ -13,8 +13,9 @@ class Template:
 class BasicTempalte(Template):
 
     def __init__(self, content: Dict[str, str]) -> None:
-        super().__init__()
         self.output = self._fit(content)
+        super().__init__()
+        
 
     def __str__(self) -> str:
         return self.output
