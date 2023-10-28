@@ -2,10 +2,10 @@ embedding_size: 128
 n_layers: 2
 reg_weight: 0
 require_pow: True
-line_layers: [128, 64, 32]
+line_layers: [1024, 512, 128]
 use_mte: True
 use_improved_prompt: True
-freeze_embedding: False
+freeze_embedding: True
 dropout_prob: 0.1
 use_bn: True
-node_dropout: 0.2
+node_dropout: 0.05

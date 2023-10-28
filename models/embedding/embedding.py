@@ -16,7 +16,8 @@ embedding_models = {
     "e5": (HuggingFaceInstructEmbeddings, "intfloat/e5-large-v2"),
     "ixl": (HuggingFaceInstructEmbeddings, "hkunlp/instructor-xl"),
     "bge-small": (HuggingFaceInstructEmbeddings, "BAAI/bge-small-en"),
-    "bge-large": (HuggingFaceInstructEmbeddings, "BAAI/bge-large-en-v1.5")
+    "bge-large": (HuggingFaceInstructEmbeddings, "BAAI/bge-large-en-v1.5"),
+    "bge-base": (HuggingFaceInstructEmbeddings, "BAAI/bge-base-en-v1.5")
 }
 
 

@@ -94,14 +94,14 @@ class XXX(GeneralGraphRecommender):
             item_invocations[iid] = self.dataset.inter_data_by_type("item", iid)
         if self.use_improved_prompt:
             user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.IMPROVED,
-                                        EmbeddingModel.INSTRUCTOR_BGE_LARGE, invocations=user_invocations, auto_save=False))
+                                        EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=user_invocations, auto_save=False))
             item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.IMPROVED,
-                                        EmbeddingModel.INSTRUCTOR_BGE_LARGE, invocations=item_invocations, auto_save=False))
+                                        EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
         else:
             user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.BASIC,
-                                        EmbeddingModel.INSTRUCTOR_BGE_LARGE, invocations=user_invocations, auto_save=False))
+                                        EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=user_invocations, auto_save=False))
             item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.BASIC,
-                                        EmbeddingModel.INSTRUCTOR_BGE_LARGE, invocations=item_invocations, auto_save=False))
+                                        EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
         self.user_embedding = torch.nn.Embedding.from_pretrained(
             user_embedding, self.freeze_embedding)
         self.item_embedding = torch.nn.Embedding.from_pretrained(
