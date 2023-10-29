@@ -88,9 +88,7 @@ ENV/
 *.swp
 *~
 
-*.item
-*.user
-*.inter
+
 *.DS_Store
 
 output/*
