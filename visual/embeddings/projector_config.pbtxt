@@ -1,54 +1,4 @@
 embeddings {
-  tensor_name: "User Embeddings:00000"
-  metadata_path: "00000/User Embeddings/metadata.tsv"
-  tensor_path: "00000/User Embeddings/tensors.tsv"
-}
-embeddings {
-  tensor_name: "Item Embeddings:00000"
-  metadata_path: "00000/Item Embeddings/metadata.tsv"
-  tensor_path: "00000/Item Embeddings/tensors.tsv"
-}
-embeddings {
-  tensor_name: "User Embeddings:00000"
-  metadata_path: "00000/User Embeddings/metadata.tsv"
-  tensor_path: "00000/User Embeddings/tensors.tsv"
-}
-embeddings {
-  tensor_name: "Item Embeddings:00000"
-  metadata_path: "00000/Item Embeddings/metadata.tsv"
-  tensor_path: "00000/Item Embeddings/tensors.tsv"
-}
-embeddings {
-  tensor_name: "User Embeddings:00000"
-  metadata_path: "00000/User Embeddings/metadata.tsv"
-  tensor_path: "00000/User Embeddings/tensors.tsv"
-}
-embeddings {
-  tensor_name: "Item Embeddings:00000"
-  metadata_path: "00000/Item Embeddings/metadata.tsv"
-  tensor_path: "00000/Item Embeddings/tensors.tsv"
-}
-embeddings {
-  tensor_name: "User Embeddings:00000"
-  metadata_path: "00000/User Embeddings/metadata.tsv"
-  tensor_path: "00000/User Embeddings/tensors.tsv"
-}
-embeddings {
-  tensor_name: "Item Embeddings:00000"
-  metadata_path: "00000/Item Embeddings/metadata.tsv"
-  tensor_path: "00000/Item Embeddings/tensors.tsv"
-}
-embeddings {
-  tensor_name: "User Embeddings - nn.Embedding:00000"
-  metadata_path: "00000/User Embeddings - nn.Embedding/metadata.tsv"
-  tensor_path: "00000/User Embeddings - nn.Embedding/tensors.tsv"
-}
-embeddings {
-  tensor_name: "Item Embeddings - nn.Embedding:00000"
-  metadata_path: "00000/Item Embeddings - nn.Embedding/metadata.tsv"
-  tensor_path: "00000/Item Embeddings - nn.Embedding/tensors.tsv"
-}
-embeddings {
   tensor_name: "User Embeddings - IMPROVED:00000"
   metadata_path: "00000/User Embeddings - IMPROVED/metadata.tsv"
   tensor_path: "00000/User Embeddings - IMPROVED/tensors.tsv"
@@ -59,9 +9,14 @@ embeddings {
   tensor_path: "00000/Item Embeddings - IMPROVED/tensors.tsv"
 }
 embeddings {
-  tensor_name: "User Embeddings - IMPROVED_country:00000"
-  metadata_path: "00000/User Embeddings - IMPROVED_country/metadata.tsv"
-  tensor_path: "00000/User Embeddings - IMPROVED_country/tensors.tsv"
+  tensor_name: "User Embeddings - DEFAULT:00000"
+  metadata_path: "00000/User Embeddings - DEFAULT/metadata.tsv"
+  tensor_path: "00000/User Embeddings - DEFAULT/tensors.tsv"
+}
+embeddings {
+  tensor_name: "Item Embeddings - DEFAULT:00000"
+  metadata_path: "00000/Item Embeddings - DEFAULT/metadata.tsv"
+  tensor_path: "00000/Item Embeddings - DEFAULT/tensors.tsv"
 }
 embeddings {
   tensor_name: "User Embeddings - IMPROVED_country:00000"
@@ -72,4 +27,14 @@ embeddings {
   tensor_name: "Item Embeddings - IMPROVED_country:00000"
   metadata_path: "00000/Item Embeddings - IMPROVED_country/metadata.tsv"
   tensor_path: "00000/Item Embeddings - IMPROVED_country/tensors.tsv"
+}
+embeddings {
+  tensor_name: "User Embeddings - STATIC_country:00000"
+  metadata_path: "00000/User Embeddings - STATIC_country/metadata.tsv"
+  tensor_path: "00000/User Embeddings - STATIC_country/tensors.tsv"
+}
+embeddings {
+  tensor_name: "Item Embeddings - STATIC_country:00000"
+  metadata_path: "00000/Item Embeddings - STATIC_country/metadata.tsv"
+  tensor_path: "00000/Item Embeddings - STATIC_country/tensors.tsv"
 }
