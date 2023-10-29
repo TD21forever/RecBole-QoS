@@ -7,7 +7,7 @@ import pandas as pd
 from langchain.embeddings import (HuggingFaceEmbeddings,
                                   HuggingFaceInstructEmbeddings)
 
-from models.embedding.template import BasicTempalte, ImprovedTemplate
+from models.embedding.template import BasicTempalte, ImprovedTemplate, StaticTemplate
 from root import ORIGINAL_DATASET_DIR, RESOURCE_DIR
 from utils.enums import *
 
@@ -56,15 +56,16 @@ class EmbeddingHelper:
             template_func = BasicTempalte
         elif template_type == TemplateType.IMPROVED:
             template_func = ImprovedTemplate
+        elif template_type == TemplateType.STATIC:
+            template_func = StaticTemplate
         else:
             raise ValueError
         
         res = []
-        
+        print(len(info))
         for row_dict in info.to_dict(orient="records"):
             id_ = row_dict[id_label]
-            
-            if isinstance(template_func, BasicTempalte):
+            if issubclass(template_func, BasicTempalte):
                 template = template_func(row_dict)
             else:
                 if type_ == EmbeddingType.USER:

@@ -75,6 +75,7 @@ class EmbeddingModel(Enum):
 class TemplateType(Enum):
     BASIC = "basic"
     IMPROVED = "improved"
+    STATIC = "static"
 
     @classmethod
     def from_code(cls, code: str):
