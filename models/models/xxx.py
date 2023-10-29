@@ -22,7 +22,7 @@ from torch_geometric.utils import dropout_adj
 
 from models.abc_model import GeneralGraphRecommender
 from models.embedding import EmbeddingHelper
-from models.layers import LightGCNConv, MLPLayers, ResidualLayer
+from models.layers import LightGCNConv, MLPLayers, ResidualLayer, LightGATConv
 from utils.enums import EmbeddingModel, EmbeddingType, TemplateType
 
 
@@ -71,16 +71,17 @@ class XXX(GeneralGraphRecommender):
         embedding_size = self.user_embedding.weight.shape[1]
 
         self.u_embedding_residual = ResidualLayer(
-            embedding_size, 512, dropout=self.dropout_prob, bn=self.use_bn)
+            embedding_size * 2, 512, dropout=self.dropout_prob, bn=self.use_bn)
         self.i_embedding_residual = ResidualLayer(
-            embedding_size, 512, dropout=self.dropout_prob, bn=self.use_bn)
+            embedding_size * 2, 512, dropout=self.dropout_prob, bn=self.use_bn)
 
-        self.line = [embedding_size * 2] + config["line_layers"]
+        self.line = [embedding_size * 4] + config["line_layers"]
         self.affine = MLPLayers(
             self.line, dropout=self.dropout_prob, bn=self.use_bn)
         self.output_layer = nn.Linear(self.line[-1], 1)
 
-        self.gcn_conv = LightGCNConv(dim=self.latent_dim)
+        # self.gcn_conv = LightGCNConv(dim=self.latent_dim)
+        self.gcn_conv = LightGATConv(dim=embedding_size)
         self.reg_loss = EmbLoss()
         self.loss = nn.L1Loss()
 
@@ -150,10 +151,15 @@ class XXX(GeneralGraphRecommender):
         user_all_embeddings, item_all_embeddings = self.forward()
 
         u_embeddings = user_all_embeddings[uid]
+        u_ego_embeddings = self.user_embedding(uid)
+        u_final_embeddings = torch.cat([u_embeddings, u_ego_embeddings], dim = 1)
+        
         i_embeddings = item_all_embeddings[iid]
+        i_ego_embeddings = self.item_embedding(iid)
+        i_final_embeddings = torch.cat([i_embeddings, i_ego_embeddings], dim = 1)
 
-        u_embeddings = self.u_embedding_residual(u_embeddings)
-        i_embeddings = self.i_embedding_residual(i_embeddings)
+        u_embeddings = self.u_embedding_residual(u_final_embeddings)
+        i_embeddings = self.i_embedding_residual(i_final_embeddings)
 
         u_i_embeddings = torch.cat([u_embeddings, i_embeddings], dim=1)
         x = self.affine(u_i_embeddings)
@@ -162,8 +168,6 @@ class XXX(GeneralGraphRecommender):
         task_loss = self.loss(output, label)
 
         # calculate regularization Loss
-        u_ego_embeddings = self.user_embedding(uid)
-        i_ego_embeddings = self.item_embedding(iid)
         reg_loss = self.reg_loss(
             u_ego_embeddings, i_ego_embeddings, require_pow=self.require_pow)
 
@@ -178,11 +182,16 @@ class XXX(GeneralGraphRecommender):
         user_all_embeddings, item_all_embeddings = self.forward()
 
         u_embeddings = user_all_embeddings[user]
+        u_ego_embeddings = self.user_embedding(user)
+        u_final_embeddings = torch.cat([u_embeddings, u_ego_embeddings], dim = 1)
+        
         i_embeddings = item_all_embeddings[item]
+        i_ego_embeddings = self.item_embedding(item)
+        i_final_embeddings = torch.cat([i_embeddings, i_ego_embeddings], dim = 1)
 
-        u_embeddings = self.u_embedding_residual(u_embeddings)
-        i_embeddings = self.i_embedding_residual(i_embeddings)
-
+        u_embeddings = self.u_embedding_residual(u_final_embeddings)
+        i_embeddings = self.i_embedding_residual(i_final_embeddings)
+        
         u_i_embeddings = torch.cat([u_embeddings, i_embeddings], dim=1)
         x = self.affine(u_i_embeddings)
         output = self.output_layer(x).squeeze(-1)

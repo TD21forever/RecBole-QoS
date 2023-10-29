@@ -3,6 +3,7 @@ import math
 
 import numpy as np
 import torch
+from torch.nn import Parameter
 import torch.nn as nn
 import torch.nn.functional as fn
 from recbole.utils import FeatureSource, FeatureType
@@ -994,6 +995,25 @@ class LightGCNConv(MessagePassing):
 
     def message(self, x_j, edge_weight):
         return edge_weight.view(-1, 1) * x_j
+
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, self.dim)
+
+class LightGATConv(MessagePassing):
+    def __init__(self, dim):
+        super(LightGATConv, self).__init__(aggr='add')
+        self.dim = dim
+        self.attention = Parameter(torch.Tensor(1, 2 * dim))
+        torch.nn.init.xavier_uniform_(self.attention)
+
+    def forward(self, x, edge_index, edge_weight):
+        return self.propagate(edge_index, x=x, edge_weight=edge_weight)
+
+    def message(self, x_i, x_j, edge_weight):
+        x_cat = torch.cat([x_i, x_j], dim = -1)
+        alpha = (x_cat * self.attention).sum(dim = -1)
+        alpha = torch.nn.functional.softmax(alpha, dim = 0)
+        return edge_weight.view(-1, 1) * x_j * alpha.view(-1, 1)
 
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, self.dim)

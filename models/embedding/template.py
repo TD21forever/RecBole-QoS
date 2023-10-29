@@ -67,3 +67,22 @@ class ImprovedTemplate(Template):
 
     def __str__(self) -> str:
         return self.output
+
+    def template(self):
+        """
+        The following content pertains to the personal attributes of the user 0:
+
+        When initiating requests, user 0 has the geographical coordinates 38.0 and -97.0, 
+        located in United States, belongs to autonomous system AS7018 AT&T Services, Inc., 
+        and uses the IP address 12.108.127.138 with the IP number 208437130 while accessing web services.
+
+        The following content pertains to the behavioral attributes of the user 0:
+
+        User 0.0 invokes Service 3650.0 with a QoS value of 0.08900000154972076. 
+        User 0.0 invokes Service 1551.0 with a QoS value of 0.5709999799728394. 
+        User 0.0 invokes Service 1272.0 with a QoS value of 0.1420000046491623. 
+        User 0.0 invokes Service 2328.0 with a QoS value of 6.758999824523926. 
+        ….
+        If personal and behavioral attributes are similar, it is assumed that two users will have the same QoS values when invoking the same services.
+ 
+        """
