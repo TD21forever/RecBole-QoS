@@ -19,7 +19,7 @@ state: 'info'
 epochs: 1000                     # (int) The number of training epochs.
 train_batch_size: 512          # (int) The training batch size.
 learner: adam                   # (str) The name of used optimizer.
-learning_rate: 0.0005           # (float) Learning rate.
+learning_rate: 0.001           # (float) Learning rate.
 weight_decay: 0.0               # (float) The weight decay value (L2 penalty) for optimizers.
 eval_step: 1                    # (int) The number of training epochs before an evaluation on the valid dataset.
 stopping_step: 10               # (int) The threshold for validation-based early stopping.
@@ -28,7 +28,7 @@ loss_decimal_place: 4           # (int) The decimal place of training loss.
 require_pow: False              # (bool) Whether or not to perform power operation in EmbLoss.
 enable_amp: False               # (bool) Whether or not to use mixed precision training.
 enable_scaler: False            # (bool) Whether or not to use GradScaler in mixed precision training.
-split_ratio: 0.05            # (float) The ratio of splitting dataset.
+split_ratio: 0.20            # (float) The ratio of splitting dataset.
 
 # Evaluation Settings
 metrics: ["rmse", "mae"]        # (list or str) Evaluation metrics.

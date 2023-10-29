@@ -1,6 +1,6 @@
 import hashlib
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import numpy as np
 import pandas as pd
@@ -15,7 +15,9 @@ embedding_models = {
     "il": (HuggingFaceInstructEmbeddings, "hkunlp/instructor-large"),
     "e5": (HuggingFaceInstructEmbeddings, "intfloat/e5-large-v2"),
     "ixl": (HuggingFaceInstructEmbeddings, "hkunlp/instructor-xl"),
-    "bge-small": (HuggingFaceInstructEmbeddings, "BAAI/bge-small-en")
+    "bge-small": (HuggingFaceInstructEmbeddings, "BAAI/bge-small-en"),
+    "bge-large": (HuggingFaceInstructEmbeddings, "BAAI/bge-large-en-v1.5"),
+    "bge-base": (HuggingFaceInstructEmbeddings, "BAAI/bge-base-en-v1.5")
 }
 
 
@@ -42,11 +44,13 @@ class EmbeddingHelper:
         self.item_info = pd.read_csv(
             self.ipath, sep="\t", header=0, names=self._item_info_header)
 
-    def info2template(self, type_: EmbeddingType, template_type: TemplateType, invocations: Tuple) -> List[str]:
+    def info2template(self, type_: EmbeddingType, template_type: TemplateType, invocations: Dict[str, List]) -> List[str]:
         if type_ == EmbeddingType.USER:
             info = self.user_info
+            id_label = "user_id"
         else:
             info = self.item_info
+            id_label = "service_id"
 
         if template_type == TemplateType.BASIC:
             template_func = BasicTempalte
@@ -57,15 +61,17 @@ class EmbeddingHelper:
         
         res = []
         
-        for idx, row_dict in enumerate(info.to_dict(orient="records")):
+        for row_dict in info.to_dict(orient="records"):
+            id_ = row_dict[id_label]
+            
             if isinstance(template_func, BasicTempalte):
                 template = template_func(row_dict)
             else:
                 if type_ == EmbeddingType.USER:
                     template = template_func(
-                        type="user", invocations=invocations[idx], content=row_dict)  # type: ignore
+                        type="user", invocations=invocations.get(id_, []), content=row_dict)  # type: ignore
                 else:
-                    template = template_func(type="item", invocations=invocations[idx], content=row_dict)
+                    template = template_func(type="item", invocations=invocations.get(id_, []), content=row_dict)
             res.append(str(template))
 
         return res

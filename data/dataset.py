@@ -221,11 +221,11 @@ class RecboleDataset(TorchDataset):
 
     @property
     def uids_in_inter_feat(self):
-        return self.inter_feat[self.uid_field].unique()
+        return self.inter_feat[self.uid_field].unique().tolist()
         
     @property
     def iids_in_inter_feat(self):
-        return self.inter_feat[self.iid_field].unique()
+        return self.inter_feat[self.iid_field].unique().tolist()
 
     def join(self, df) -> Interaction:
         """Given interaction feature, join user/item feature into it.

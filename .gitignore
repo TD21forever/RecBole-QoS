@@ -92,3 +92,5 @@ ENV/
 *.user
 *.inter
 *.DS_Store
+
+output/*

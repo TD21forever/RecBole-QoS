@@ -22,7 +22,7 @@ from torch_geometric.utils import dropout_adj
 
 from models.abc_model import GeneralGraphRecommender
 from models.embedding import EmbeddingHelper
-from models.layers import LightGCNConv, MLPLayers, ResidualLayer
+from models.layers import LightGCNConv, MLPLayers, ResidualLayer, LightGATConv
 from utils.enums import EmbeddingModel, EmbeddingType, TemplateType
 
 
@@ -52,6 +52,7 @@ class XXX(GeneralGraphRecommender):
         self.require_pow = config['require_pow']
         # boll type: whether to use mte
         self.use_embedding = config["use_mte"]
+        self.use_improved_prompt = config["use_improved_prompt"]
         self.freeze_embedding = config["freeze_embedding"]
         self.dropout_prob = config["dropout_prob"]
         self.use_bn = config["use_bn"]
@@ -70,33 +71,38 @@ class XXX(GeneralGraphRecommender):
         embedding_size = self.user_embedding.weight.shape[1]
 
         self.u_embedding_residual = ResidualLayer(
-            embedding_size, 512, dropout=self.dropout_prob, bn=self.use_bn)
+            embedding_size * 2, 512, dropout=self.dropout_prob, bn=self.use_bn)
         self.i_embedding_residual = ResidualLayer(
-            embedding_size, 512, dropout=self.dropout_prob, bn=self.use_bn)
+            embedding_size * 2, 512, dropout=self.dropout_prob, bn=self.use_bn)
 
-        self.line = [embedding_size * 2] + config["line_layers"]
+        self.line = [embedding_size * 4] + config["line_layers"]
         self.affine = MLPLayers(
             self.line, dropout=self.dropout_prob, bn=self.use_bn)
         self.output_layer = nn.Linear(self.line[-1], 1)
 
-        self.gcn_conv = LightGCNConv(dim=self.latent_dim)
+        # self.gcn_conv = LightGCNConv(dim=self.latent_dim)
+        self.gcn_conv = LightGATConv(dim=embedding_size)
         self.reg_loss = EmbLoss()
         self.loss = nn.L1Loss()
 
     def _get_pretrained_embedding(self):
         eh = EmbeddingHelper()
-        user_invocations = []
-        item_invocations = []
+        user_invocations = {}
+        item_invocations = {}
         for uid in self.dataset.uids_in_inter_feat:
-            user_invocations.append(
-                self.dataset.inter_data_by_type("user", uid))
+            user_invocations[uid] = self.dataset.inter_data_by_type("user", uid)
         for iid in self.dataset.iids_in_inter_feat:
-            item_invocations.append(
-                self.dataset.inter_data_by_type("item", iid))
-        user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.IMPROVED,
-                                      EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=user_invocations, auto_save=False))
-        item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.IMPROVED,
-                                      EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
+            item_invocations[iid] = self.dataset.inter_data_by_type("item", iid)
+        if self.use_improved_prompt:
+            user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.IMPROVED,
+                                        EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=user_invocations, auto_save=False))
+            item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.IMPROVED,
+                                        EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
+        else:
+            user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.BASIC,
+                                        EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=user_invocations, auto_save=False))
+            item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.BASIC,
+                                        EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
         self.user_embedding = torch.nn.Embedding.from_pretrained(
             user_embedding, self.freeze_embedding)
         self.item_embedding = torch.nn.Embedding.from_pretrained(
@@ -145,10 +151,15 @@ class XXX(GeneralGraphRecommender):
         user_all_embeddings, item_all_embeddings = self.forward()
 
         u_embeddings = user_all_embeddings[uid]
+        u_ego_embeddings = self.user_embedding(uid)
+        u_final_embeddings = torch.cat([u_embeddings, u_ego_embeddings], dim = 1)
+        
         i_embeddings = item_all_embeddings[iid]
+        i_ego_embeddings = self.item_embedding(iid)
+        i_final_embeddings = torch.cat([i_embeddings, i_ego_embeddings], dim = 1)
 
-        u_embeddings = self.u_embedding_residual(u_embeddings)
-        i_embeddings = self.i_embedding_residual(i_embeddings)
+        u_embeddings = self.u_embedding_residual(u_final_embeddings)
+        i_embeddings = self.i_embedding_residual(i_final_embeddings)
 
         u_i_embeddings = torch.cat([u_embeddings, i_embeddings], dim=1)
         x = self.affine(u_i_embeddings)
@@ -157,8 +168,6 @@ class XXX(GeneralGraphRecommender):
         task_loss = self.loss(output, label)
 
         # calculate regularization Loss
-        u_ego_embeddings = self.user_embedding(uid)
-        i_ego_embeddings = self.item_embedding(iid)
         reg_loss = self.reg_loss(
             u_ego_embeddings, i_ego_embeddings, require_pow=self.require_pow)
 
@@ -173,11 +182,16 @@ class XXX(GeneralGraphRecommender):
         user_all_embeddings, item_all_embeddings = self.forward()
 
         u_embeddings = user_all_embeddings[user]
+        u_ego_embeddings = self.user_embedding(user)
+        u_final_embeddings = torch.cat([u_embeddings, u_ego_embeddings], dim = 1)
+        
         i_embeddings = item_all_embeddings[item]
+        i_ego_embeddings = self.item_embedding(item)
+        i_final_embeddings = torch.cat([i_embeddings, i_ego_embeddings], dim = 1)
 
-        u_embeddings = self.u_embedding_residual(u_embeddings)
-        i_embeddings = self.i_embedding_residual(i_embeddings)
-
+        u_embeddings = self.u_embedding_residual(u_final_embeddings)
+        i_embeddings = self.i_embedding_residual(i_final_embeddings)
+        
         u_i_embeddings = torch.cat([u_embeddings, i_embeddings], dim=1)
         x = self.affine(u_i_embeddings)
         output = self.output_layer(x).squeeze(-1)
