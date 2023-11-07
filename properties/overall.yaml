@@ -28,7 +28,7 @@ loss_decimal_place: 4           # (int) The decimal place of training loss.
 require_pow: False              # (bool) Whether or not to perform power operation in EmbLoss.
 enable_amp: False               # (bool) Whether or not to use mixed precision training.
 enable_scaler: False            # (bool) Whether or not to use GradScaler in mixed precision training.
-split_ratio: 0.2            # (float) The ratio of splitting dataset.
+split_ratio: 0.05            # (float) The ratio of splitting dataset.
 
 # Evaluation Settings
 metrics: ["rmse", "mae"]        # (list or str) Evaluation metrics.

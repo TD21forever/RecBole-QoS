@@ -57,6 +57,10 @@ class XXX(GeneralGraphRecommender):
         self.dropout_prob = config["dropout_prob"]
         self.use_bn = config["use_bn"]
         self.node_dropout = config["node_dropout"]
+        
+        self.cl_rate = config['lambda']
+        self.eps = config['eps']
+        self.temperature = config['temperature']
 
         # define layers and loss
 
@@ -99,9 +103,9 @@ class XXX(GeneralGraphRecommender):
             item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.IMPROVED,
                                         EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
         else:
-            user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.BASIC,
+            user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.STATIC,
                                         EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=user_invocations, auto_save=False))
-            item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.BASIC,
+            item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.STATIC,
                                         EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
         self.user_embedding = torch.nn.Embedding.from_pretrained(
             user_embedding, self.freeze_embedding)
@@ -118,7 +122,7 @@ class XXX(GeneralGraphRecommender):
         ego_embeddings = torch.cat([user_embeddings, item_embeddings], dim=0)
         return ego_embeddings
 
-    def forward(self):
+    def forward(self,perturbed):
         all_embeddings = self.get_ego_embeddings()
         embeddings_list = [all_embeddings]
 
@@ -134,6 +138,9 @@ class XXX(GeneralGraphRecommender):
             all_embeddings = nn.LeakyReLU(negative_slope=0.2)(all_embeddings)
             all_embeddings = nn.Dropout(self.dropout_prob)(all_embeddings)
             all_embeddings = F.normalize(all_embeddings, p=2, dim=1)
+            if perturbed:
+                random_noise = torch.rand_like(all_embeddings, device=all_embeddings.device)
+                all_embeddings = all_embeddings + torch.sign(all_embeddings) * F.normalize(random_noise, dim=-1) * self.eps
             embeddings_list.append(all_embeddings)
         lightgcn_all_embeddings = torch.stack(embeddings_list, dim=1)
         lightgcn_all_embeddings = torch.mean(lightgcn_all_embeddings, dim=1)
@@ -141,14 +148,21 @@ class XXX(GeneralGraphRecommender):
         user_all_embeddings, item_all_embeddings = torch.split(
             lightgcn_all_embeddings, [self.n_users, self.n_items])
         return user_all_embeddings, item_all_embeddings
-
-    def calculate_loss(self, interaction):
-
+    
+    def calculate_cl_loss(self, x1, x2):
+        x1, x2 = F.normalize(x1, dim=-1), F.normalize(x2, dim=-1)
+        pos_score = (x1 * x2).sum(dim = -1)
+        pos_score = torch.exp(pos_score / self.temperature)
+        ttl_score = torch.matmul(x1, x2.transpose(0, 1))
+        ttl_score = torch.exp(ttl_score / self.temperature).sum(dim=1)
+        return -torch.log(pos_score / ttl_score).sum()
+        
+    def calculate_task_loss(self, interaction):
         uid = interaction[self.USER_ID]
         iid = interaction[self.ITEM_ID]
         label = interaction[self.label]
 
-        user_all_embeddings, item_all_embeddings = self.forward()
+        user_all_embeddings, item_all_embeddings = self.forward(False)
 
         u_embeddings = user_all_embeddings[uid]
         u_ego_embeddings = self.user_embedding(uid)
@@ -162,6 +176,8 @@ class XXX(GeneralGraphRecommender):
         i_embeddings = self.i_embedding_residual(i_final_embeddings)
 
         u_i_embeddings = torch.cat([u_embeddings, i_embeddings], dim=1)
+        
+        
         x = self.affine(u_i_embeddings)
         output = self.output_layer(x).squeeze(-1)
 
@@ -174,12 +190,28 @@ class XXX(GeneralGraphRecommender):
         loss = task_loss + self.reg_weight * reg_loss
 
         return loss
+    
+    def calculate_loss(self, interaction):
+
+        task_loss = self.calculate_task_loss(interaction)
+        return task_loss
+        
+        user = torch.unique(interaction[self.USER_ID])
+        pos_item = torch.unique(interaction[self.ITEM_ID])
+
+        perturbed_user_embs_1, perturbed_item_embs_1 = self.forward(perturbed=True)
+        perturbed_user_embs_2, perturbed_item_embs_2 = self.forward(perturbed=True)
+
+        user_cl_loss = self.calculate_cl_loss(perturbed_user_embs_1[user], perturbed_user_embs_2[user])
+        item_cl_loss = self.calculate_cl_loss(perturbed_item_embs_1[pos_item], perturbed_item_embs_2[pos_item])
+
+        return task_loss + self.cl_rate * (user_cl_loss + item_cl_loss)
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]
         item = interaction[self.ITEM_ID]
 
-        user_all_embeddings, item_all_embeddings = self.forward()
+        user_all_embeddings, item_all_embeddings = self.forward(False)
 
         u_embeddings = user_all_embeddings[user]
         u_ego_embeddings = self.user_embedding(user)

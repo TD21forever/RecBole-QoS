@@ -5,7 +5,10 @@ require_pow: True
 line_layers: [1024, 512, 128]
 use_mte: True
 use_improved_prompt: True
-freeze_embedding: True
+freeze_embedding: False
 dropout_prob: 0.1
 use_bn: True
 node_dropout: 0.05
+lambda: 0.2
+eps: 0.1
+temperature: 0.2
