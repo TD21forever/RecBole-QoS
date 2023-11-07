@@ -124,22 +124,19 @@ class EmbeddingHelper:
             
             # embeddings是一个包含所有嵌入的列表
             number_of_embeddings = len(embedding)
-            # print(number_of_embeddings)
+            
             # 首个嵌入的权重
-            first_weight = 0.4
+            first_weight = 0.85
             # 其余嵌入的总权重
-            remaining_weight_total = 0.2
+            remaining_weight_total = 0.15
             # 如果只有一个嵌入，它将获得所有的权重
             if number_of_embeddings == 1:
                 weights = [1.0]
-            elif number_of_embeddings == 2:
-                weights = [0.5, 0.5]
             else:
                 # 其余每个嵌入的权重
-                remaining_weights = [remaining_weight_total / (number_of_embeddings - 2)] * (number_of_embeddings - 2)
-
+                remaining_weights = [remaining_weight_total / (number_of_embeddings - 1)] * (number_of_embeddings - 1)
                 # 构造权重列表
-                weights = [first_weight] + remaining_weights + [0.4]
+                weights = [first_weight] + remaining_weights
             embedding = np.average(embedding, axis=0, weights=weights)
             embeddings.append(embedding)
         if auto_save:
