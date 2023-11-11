@@ -141,9 +141,9 @@ class XXX(GeneralGraphRecommender):
         user_all_embeddings, item_all_embeddings = torch.split(
             lightgcn_all_embeddings, [self.n_users, self.n_items])
         return user_all_embeddings, item_all_embeddings
-
-    def calculate_loss(self, interaction):
-
+    
+    
+    def calculate_task_loss(self, interaction):
         uid = interaction[self.USER_ID]
         iid = interaction[self.ITEM_ID]
         label = interaction[self.label]
@@ -162,6 +162,8 @@ class XXX(GeneralGraphRecommender):
         i_embeddings = self.i_embedding_residual(i_final_embeddings)
 
         u_i_embeddings = torch.cat([u_embeddings, i_embeddings], dim=1)
+        
+        
         x = self.affine(u_i_embeddings)
         output = self.output_layer(x).squeeze(-1)
 
@@ -174,6 +176,11 @@ class XXX(GeneralGraphRecommender):
         loss = task_loss + self.reg_weight * reg_loss
 
         return loss
+    
+    def calculate_loss(self, interaction):
+
+        task_loss = self.calculate_task_loss(interaction)
+        return task_loss
 
     def predict(self, interaction):
         user = interaction[self.USER_ID]

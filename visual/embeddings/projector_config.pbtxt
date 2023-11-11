@@ -38,3 +38,23 @@ embeddings {
   metadata_path: "00000/Item Embeddings - STATIC_country/metadata.tsv"
   tensor_path: "00000/Item Embeddings - STATIC_country/tensors.tsv"
 }
+embeddings {
+  tensor_name: "User Embeddings - STATIC_country:00000"
+  metadata_path: "00000/User Embeddings - STATIC_country/metadata.tsv"
+  tensor_path: "00000/User Embeddings - STATIC_country/tensors.tsv"
+}
+embeddings {
+  tensor_name: "Item Embeddings - STATIC_country:00000"
+  metadata_path: "00000/Item Embeddings - STATIC_country/metadata.tsv"
+  tensor_path: "00000/Item Embeddings - STATIC_country/tensors.tsv"
+}
+embeddings {
+  tensor_name: "User Embeddings - IMPROVED_country:00000"
+  metadata_path: "00000/User Embeddings - IMPROVED_country/metadata.tsv"
+  tensor_path: "00000/User Embeddings - IMPROVED_country/tensors.tsv"
+}
+embeddings {
+  tensor_name: "Item Embeddings - IMPROVED_country:00000"
+  metadata_path: "00000/Item Embeddings - IMPROVED_country/metadata.tsv"
+  tensor_path: "00000/Item Embeddings - IMPROVED_country/tensors.tsv"
+}

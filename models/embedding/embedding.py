@@ -6,10 +6,12 @@ import numpy as np
 import pandas as pd
 from langchain.embeddings import (HuggingFaceEmbeddings,
                                   HuggingFaceInstructEmbeddings)
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from models.embedding.template import BasicTempalte, ImprovedTemplate, StaticTemplate
 from root import ORIGINAL_DATASET_DIR, RESOURCE_DIR
 from utils.enums import *
+from tqdm import tqdm
 
 embedding_models = {
     "il": (HuggingFaceInstructEmbeddings, "hkunlp/instructor-large"),
@@ -44,7 +46,7 @@ class EmbeddingHelper:
         self.item_info = pd.read_csv(
             self.ipath, sep="\t", header=0, names=self._item_info_header)
 
-    def info2template(self, type_: EmbeddingType, template_type: TemplateType, invocations: Dict[str, List]) -> List[str]:
+    def info2template(self, type_: EmbeddingType, template_type: TemplateType, invocations: Dict[str, List]) -> List[List[str]]:
         if type_ == EmbeddingType.USER:
             info = self.user_info
             id_label = "user_id"
@@ -61,8 +63,9 @@ class EmbeddingHelper:
         else:
             raise ValueError
         
-        res = []
-        print(len(info))
+        res:List[List[str]] = []
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size = 500, chunk_overlap=30)
+        
         for row_dict in info.to_dict(orient="records"):
             id_ = row_dict[id_label]
             if issubclass(template_func, BasicTempalte):
@@ -73,7 +76,8 @@ class EmbeddingHelper:
                         type="user", invocations=invocations.get(id_, []), content=row_dict)  # type: ignore
                 else:
                     template = template_func(type="item", invocations=invocations.get(id_, []), content=row_dict)
-            res.append(str(template))
+            splits = text_splitter.split_text(str(template))
+            res.append(splits)
 
         return res
 
@@ -108,8 +112,33 @@ class EmbeddingHelper:
         except FileNotFoundError as e:
             pass
         model = self.get_models(model_type)
-        embeddings = model.embed_documents(
-            self.info2template(type_, template_type, kwarg["invocations"]))
+        embeddings = []
+        for invocation_text in tqdm(self.info2template(type_, template_type, kwarg["invocations"]), 
+              desc="Processing", 
+              ncols=75, 
+              colour='green', 
+              bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}'):
+            
+            embedding = model.embed_documents(invocation_text)
+            # embedding = np.mean(model.embed_documents(invocation_text), axis=0)
+            
+            # embeddings是一个包含所有嵌入的列表
+            number_of_embeddings = len(embedding)
+            
+            # 首个嵌入的权重
+            first_weight = 0.85
+            # 其余嵌入的总权重
+            remaining_weight_total = 0.15
+            # 如果只有一个嵌入，它将获得所有的权重
+            if number_of_embeddings == 1:
+                weights = [1.0]
+            else:
+                # 其余每个嵌入的权重
+                remaining_weights = [remaining_weight_total / (number_of_embeddings - 1)] * (number_of_embeddings - 1)
+                # 构造权重列表
+                weights = [first_weight] + remaining_weights
+            embedding = np.average(embedding, axis=0, weights=weights)
+            embeddings.append(embedding)
         if auto_save:
             self.save_embedding(embeddings, file_name)
         return embeddings
