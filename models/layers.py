@@ -1,6 +1,6 @@
 import copy
 import math
-
+from typing import List
 import numpy as np
 import torch
 from torch.nn import Parameter
@@ -17,7 +17,7 @@ class ResidualLayer(nn.Module):
 
     Args:
         - input_size(int): 输入特征的大小
-        - hidden_size(int): 隐藏层的大小
+        - hidden_size(list): 隐藏层的大小
         - dropout(float): probability of an element to be zeroed. Default: 0
         - activation(str): activation function after each layer in residual layer. Default: 'relu'.
                            candidates: 'sigmoid', 'tanh', 'relu', 'leekyrelu', 'none'
@@ -36,10 +36,10 @@ class ResidualLayer(nn.Module):
         >>> torch.Size([128, 32])
     """
 
-    def __init__(self, input_size, hidden_size, dropout=0.0, activation="relu", bn=False):
+    def __init__(self, input_size, hidden_size:List[int], dropout=0.0, activation="relu", bn=False):
         super(ResidualLayer, self).__init__()
-                
-        layers = [input_size, hidden_size, input_size]
+        
+        layers = [input_size] + hidden_size + [input_size]
         self.mlp_layer = MLPLayers(layers=layers, dropout=dropout, activation=activation, bn=bn)
         
     def forward(self, input_feature):

@@ -68,21 +68,21 @@ class ImprovedTemplate(Template):
 
     def fit_user(self, *, user_id, ip_address, country, ip_number, AS, latitude, longitude, invocations):
         template = f"""
-            The following content pertains to the personal attributes of the user {user_id}:
+            The following content pertains to the static attributes of the user {user_id}:
             When initiating requests, user {user_id} has the geographical coordinates {latitude} and {longitude}, located in {country}, belongs to autonomous system {AS}, and uses the IP address {ip_address} with the IP number {ip_number} while accessing web services.
             The following content pertains to the behavioral attributes of the user {user_id}:
             { "".join([self._user_invoke_service(user_id, service_id, qos)  for user_id, service_id, qos in invocations]) }
-            If personal and behavioral attributes are similar, it is assumed that two users will have the same QoS values when invoking the same services.
+            If static and behavioral attributes are similar, it is assumed that two users will have the same QoS values when invoking the same services.
         """
         return template
 
     def fit_service(self, *, service_id, wsdl_address, provider, ip_address, country, ip_number, AS, latitude, longitude, invocations):
         template = f"""
-            The following content pertains to the personal attributes of the service {service_id}:
+            The following content pertains to the static attributes of the service {service_id}:
             The service {service_id} is provided by {provider} with wsdl_address {wsdl_address}, it has the geographical coordinates {latitude} and {longitude}, located in {country}, belongs to autonomous system {AS}, and uses the IP address {ip_address} with the IP number {ip_number}.
             The following content pertains to the behavioral attributes of the service {service_id}:
             { "".join([self._service_invoked_by_user(user_id, service_id, qos)  for user_id, service_id, qos in invocations]) }
-            If personal and behavioral attributes are similar, it is assumed that two service will have the same QoS values when invoked by the same user.
+            If static and behavioral attributes are similar, it is assumed that two service will have the same QoS values when invoked by the same user.
         """
         return template
 

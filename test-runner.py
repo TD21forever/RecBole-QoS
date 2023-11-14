@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore")
 # - wandb_project ✅
 
 
-def test(dataset_name, split_rate, use_mte, use_improved_prompt):
+def test(dataset_name, split_rate, use_mte, use_improved_prompt, learning_rate, train_batch_size):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -51,12 +51,14 @@ def test(dataset_name, split_rate, use_mte, use_improved_prompt):
     config["LABEL_FIELD"] = dataset_name.split("-")[1]
     config["use_mte"] = use_mte
     config["use_improved_prompt"] = use_improved_prompt
+    config["learning_rate"] = learning_rate
+    config["train_batch_size"] = train_batch_size
     
     init_logger(config)
     init_seed(config["seed"], True)
 
     logger = getLogger(str(int(time.time())))
-    logger.info(f"dataset_name:{dataset_name}, split_rate:{split_rate}, use_mte:{use_mte}, use_improved_prompt:{use_improved_prompt}")
+    logger.info(f"dataset_name:{dataset_name}, split_rate:{split_rate}, use_mte:{use_mte}, use_improved_prompt:{use_improved_prompt}, lr:{learning_rate}, bs:{train_batch_size}")
     logger.info(config)
 
     dataset = GeneralGraphDataset(config)
@@ -82,11 +84,6 @@ def test(dataset_name, split_rate, use_mte, use_improved_prompt):
 
 
 # %%
-for dataset_name in ["wsdream-tp"]:
-    for split_rate in [0.025, 0.05, 0.075, 0.1]:
-        test(dataset_name, split_rate, True, False)
-        test(dataset_name, split_rate, True, True)
-        test(dataset_name, split_rate, False, None)
-                
-
-                
+for lr in [0.005,0.0005]:
+    for batch_size in [128,256,512,1024,2048]:
+        test("wsdream-rt", 0.05, True, True, lr, batch_size)

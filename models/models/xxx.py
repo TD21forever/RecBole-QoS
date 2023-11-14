@@ -69,11 +69,13 @@ class XXX(GeneralGraphRecommender):
             self._get_pretrained_embedding()
 
         embedding_size = self.user_embedding.weight.shape[1]
-
-        self.u_embedding_residual = ResidualLayer(
-            embedding_size * 2, 512, dropout=self.dropout_prob, bn=self.use_bn)
-        self.i_embedding_residual = ResidualLayer(
-            embedding_size * 2, 512, dropout=self.dropout_prob, bn=self.use_bn)
+        
+        self.u_embedding_residual = nn.Sequential(
+            ResidualLayer(embedding_size * 2, [512, 1024, 512], dropout=self.dropout_prob, bn=self.use_bn),
+        )
+        self.i_embedding_residual = nn.Sequential(
+            ResidualLayer(embedding_size * 2, [512, 1024, 512], dropout=self.dropout_prob, bn=self.use_bn),
+        )
 
         self.line = [embedding_size * 4] + config["line_layers"]
         self.affine = MLPLayers(
