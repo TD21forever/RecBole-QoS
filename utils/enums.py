@@ -63,6 +63,9 @@ class EmbeddingModel(Enum):
     INSTRUCTOR_BGE_SMALL = "bge-small"
     INSTRUCTOR_BGE_LARGE = "bge-large"
     INSTRUCTOR_BGE_BASE = "bge-base"
+    BERT = "bert"
+    GTE_BASE = "gte-base"
+    MINILM = "minilm"
 
     @classmethod
     def from_code(cls, code: str):
