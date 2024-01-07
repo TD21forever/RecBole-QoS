@@ -90,19 +90,21 @@ class XXX(GeneralGraphRecommender):
         user_invocations = {}
         item_invocations = {}
         for uid in self.dataset.uids_in_inter_feat:
-            user_invocations[uid] = self.dataset.inter_data_by_type("user", uid)
+            user_invocations[uid] = self.dataset.inter_data_by_type(
+                "user", uid)
         for iid in self.dataset.iids_in_inter_feat:
-            item_invocations[iid] = self.dataset.inter_data_by_type("item", iid)
+            item_invocations[iid] = self.dataset.inter_data_by_type(
+                "item", iid)
         if self.use_improved_prompt:
             user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.IMPROVED,
-                                        EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=user_invocations, auto_save=False))
+                                                 EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=user_invocations, auto_save=False))
             item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.IMPROVED,
-                                        EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
+                                                 EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
         else:
             user_embedding = torch.Tensor(eh.fit(EmbeddingType.USER, TemplateType.BASIC,
-                                        EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=user_invocations, auto_save=False))
+                                                 EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=user_invocations, auto_save=False))
             item_embedding = torch.Tensor(eh.fit(EmbeddingType.ITEM, TemplateType.BASIC,
-                                        EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
+                                                 EmbeddingModel.INSTRUCTOR_BGE_SMALL, invocations=item_invocations, auto_save=False))
         self.user_embedding = torch.nn.Embedding.from_pretrained(
             user_embedding, self.freeze_embedding)
         self.item_embedding = torch.nn.Embedding.from_pretrained(
@@ -152,11 +154,11 @@ class XXX(GeneralGraphRecommender):
 
         u_embeddings = user_all_embeddings[uid]
         u_ego_embeddings = self.user_embedding(uid)
-        u_final_embeddings = torch.cat([u_embeddings, u_ego_embeddings], dim = 1)
-        
+        u_final_embeddings = torch.cat([u_embeddings, u_ego_embeddings], dim=1)
+
         i_embeddings = item_all_embeddings[iid]
         i_ego_embeddings = self.item_embedding(iid)
-        i_final_embeddings = torch.cat([i_embeddings, i_ego_embeddings], dim = 1)
+        i_final_embeddings = torch.cat([i_embeddings, i_ego_embeddings], dim=1)
 
         u_embeddings = self.u_embedding_residual(u_final_embeddings)
         i_embeddings = self.i_embedding_residual(i_final_embeddings)
@@ -183,15 +185,15 @@ class XXX(GeneralGraphRecommender):
 
         u_embeddings = user_all_embeddings[user]
         u_ego_embeddings = self.user_embedding(user)
-        u_final_embeddings = torch.cat([u_embeddings, u_ego_embeddings], dim = 1)
-        
+        u_final_embeddings = torch.cat([u_embeddings, u_ego_embeddings], dim=1)
+
         i_embeddings = item_all_embeddings[item]
         i_ego_embeddings = self.item_embedding(item)
-        i_final_embeddings = torch.cat([i_embeddings, i_ego_embeddings], dim = 1)
+        i_final_embeddings = torch.cat([i_embeddings, i_ego_embeddings], dim=1)
 
         u_embeddings = self.u_embedding_residual(u_final_embeddings)
         i_embeddings = self.i_embedding_residual(i_final_embeddings)
-        
+
         u_i_embeddings = torch.cat([u_embeddings, i_embeddings], dim=1)
         x = self.affine(u_i_embeddings)
         output = self.output_layer(x).squeeze(-1)
