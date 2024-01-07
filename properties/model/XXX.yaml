@@ -4,6 +4,7 @@ reg_weight: 0
 require_pow: True
 line_layers: [512, 256, 128]
 use_mte: True
+mte_model: "bge-small"
 use_improved_prompt: True
 freeze_embedding: True
 dropout_prob: 0.1

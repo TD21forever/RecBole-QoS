@@ -3,6 +3,7 @@
 import argparse
 import warnings
 from logging import getLogger
+from torch_geometric.nn import GATConv
 
 from config.configuration import Config
 from data.dataset import GeneralDataset, GeneralGraphDataset
@@ -44,7 +45,7 @@ parser.add_argument(
 args, _ = parser.parse_known_args()
 
 config = Config(model=args.model, dataset=args.dataset)
-
+config["train_batch_size"], config["learning_rate"], config["weight_decay"], config["n_layers"] = 512, 0.005, 1e-07, 4
 
 init_logger(config)
 init_seed(config["seed"], True)
