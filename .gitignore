@@ -88,7 +88,9 @@ ENV/
 *.swp
 *~
 
+
 *.DS_Store
 
 output/*
+log/*
 log_tensorboard/*
