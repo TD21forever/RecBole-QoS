@@ -43,7 +43,6 @@ logger.info(config)
 dataset = GeneralDataset(config)
 train_data, test_data = data_reparation(config, dataset)
 
-# 必须传入train_data, 必须使用训练集的数据建图
 model = get_model(config["model"])(config, train_data.dataset).to(config["device"])
 logger.info(model)
 

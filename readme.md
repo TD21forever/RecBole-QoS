@@ -1,7 +1,6 @@
 ### 基本说明
 
-
-本项目基于Recbole,适配QoS预测任务.其核心在于将QoS常用数据集WSDREAM,转换为Recbole的"原子文件",具体代码参考Recbole官网以及data文件夹中相关代码实现
+Recbole是一个非常好用的用于实现推荐任务的框架,Recbole-QoS基于Recbole,适配QoS预测任务.其核心在于将QoS常用数据集WSDREAM,转换为Recbole的"原子文件",具体可参考Recbole官网中对"原子文件"的描述以及data文件夹中相关代码实现
 
 
 ### 如何使用?
@@ -14,5 +13,9 @@
 ### 参考资料
 
 [Recbole 官网](https://recbole.io/cn/index.html)
+
+[Recbole中实现的推荐系统模型](https://github.com/RUCAIBox/RecBole/tree/master/recbole/model)
+
+[Recbole 快速开始](https://github.com/RUCAIBox/RecBole/blob/master/recbole/quick_start/quick_start.py)
 
 [Recbole GNN](https://github.com/RUCAIBox/RecBole-GNN)
