@@ -14,4 +14,5 @@
 ### 参考资料
 
 [Recbole 官网](https://recbole.io/cn/index.html)
+
 [Recbole GNN](https://github.com/RUCAIBox/RecBole-GNN)
