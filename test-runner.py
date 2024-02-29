@@ -16,21 +16,6 @@ import time
 
 warnings.filterwarnings("ignore")
 
-# %% [markdown]
-# ### TODO
-# - 添加验证集 ✅
-# - NGCF ✅
-# - LightGCN ✅
-# - 所有代码整体过一遍
-# - tensorboard ✅
-# - 训练参数整理
-# - checkpoint逻辑
-# - 日志 ✅
-# - 不同显卡切换貌似没起作用
-# - 测试流程整理,增加初始化 ✅
-# - loss计算方式的优化
-# - wandb_project ✅
-
 
 def test(dataset_name, split_rate, use_mte, use_improved_prompt, learning_rate, train_batch_size, weight_decay, n_layers, mte_model):
     parser = argparse.ArgumentParser()

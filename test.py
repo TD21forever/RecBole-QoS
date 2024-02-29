@@ -15,21 +15,6 @@ from utils.utils import get_flops, get_model
 
 warnings.filterwarnings("ignore")
 
-# %% [markdown]
-# ### TODO
-# - 添加验证集 ✅
-# - NGCF ✅
-# - LightGCN ✅
-# - 所有代码整体过一遍
-# - tensorboard ✅
-# - 训练参数整理
-# - checkpoint逻辑
-# - 日志 ✅
-# - 不同显卡切换貌似没起作用
-# - 测试流程整理,增加初始化 ✅
-# - loss计算方式的优化
-# - wandb_project ✅
-
 # %%
 
 parser = argparse.ArgumentParser()
@@ -39,13 +24,12 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--model", "-m", type=str, default="XXX", help="name of models"
+    "--model", "-m", type=str, default="NeuMF", help="name of models"
 )
 
 args, _ = parser.parse_known_args()
 
 config = Config(model=args.model, dataset=args.dataset)
-config["train_batch_size"], config["learning_rate"], config["weight_decay"], config["n_layers"] = 512, 0.005, 1e-07, 4
 
 init_logger(config)
 init_seed(config["seed"], True)
@@ -53,7 +37,10 @@ init_seed(config["seed"], True)
 logger = getLogger()
 logger.info(config)
 
-dataset = GeneralGraphDataset(config)
+# 如果是图模型,使用图数据集
+# dataset = GeneralGraphDataset(config)
+
+dataset = GeneralDataset(config)
 train_data, test_data = data_reparation(config, dataset)
 
 # 必须传入train_data, 必须使用训练集的数据建图
